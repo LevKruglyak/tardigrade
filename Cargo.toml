@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+    "tardigrade",
+    "tardigrade_launcher",
+]
+
+[profile.release]
+# lto = "fat"
+incremental = true
