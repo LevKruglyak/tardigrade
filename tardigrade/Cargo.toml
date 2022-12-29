@@ -5,12 +5,13 @@ edition = "2021"
 authors = ["Lev Kruglyak <lev.kruglyak2014@gmail.com>"]
 
 [dependencies]
-tardigrade_launcher = { path = "../tardigrade_launcher", features = ["egui"] }
+hatchery = { path = "../hatchery", features = ["egui"] }
 cgmath = "0.18"
 rand = "0.8.5"
-bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"] }
-vulkano = "0.32"
-vulkano-util = "0.32"
-vulkano-win = "0.32"
-vulkano-shaders = "0.32"
 rand_distr = "0.4.3"
+
+# bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"] }
+# vulkano = "0.32"
+# vulkano-util = "0.32"
+# vulkano-win = "0.32"
+# vulkano-shaders = "0.32"

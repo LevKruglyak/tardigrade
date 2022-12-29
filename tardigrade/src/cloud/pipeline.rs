@@ -4,6 +4,7 @@ use std::time::Instant;
 use cgmath::{Matrix3, Matrix4, Point3, Rad, Vector3};
 use tardigrade_launcher::{AutoCommandBufferBuilder, PrimaryAutoCommandBuffer, Subpass, Viewport};
 use vulkano::buffer::TypedBufferAccess;
+use vulkano::command_buffer::allocator::StandardCommandBufferAllocator;
 use vulkano::command_buffer::{CommandBufferInheritanceInfo, CommandBufferUsage};
 use vulkano::pipeline::graphics::color_blend::ColorBlendState;
 use vulkano::pipeline::graphics::input_assembly::{InputAssemblyState, PrimitiveTopology};
@@ -72,7 +73,7 @@ impl CloudPipeline {
                 .vertex_input_state(
                     BuffersDefinition::new()
                         .vertex::<TexturedVertex>()
-                        .instance::<ParticleVertex>()
+                        .instance::<ParticleVertex>(),
                 )
                 .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
                 .render_pass(subpass.clone())
@@ -97,12 +98,13 @@ impl CloudPipeline {
 
     pub fn draw(
         &mut self,
+        allocator: &StandardCommandBufferAllocator,
         command_buffer: &mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
         viewport: Viewport,
     ) {
         let mut secondary_builder = AutoCommandBufferBuilder::secondary(
-            self.device.clone(),
-            self.graphics_queue.family(),
+            allocator,
+            self.graphics_queue.queue_family_index(),
             CommandBufferUsage::OneTimeSubmit,
             CommandBufferInheritanceInfo {
                 render_pass: Some(self.subpass.clone().into()),

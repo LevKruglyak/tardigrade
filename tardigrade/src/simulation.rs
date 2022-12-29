@@ -7,20 +7,27 @@ use rand_distr::UnitBall;
 use tardigrade_launcher::vulkano;
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, DeviceLocalBuffer},
-    command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, CopyBufferInfo},
+    command_buffer::{
+        allocator::{CommandBufferAllocator, StandardCommandBufferAllocator},
+        AutoCommandBufferBuilder, CommandBufferUsage, CopyBufferInfo,
+    },
     descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet},
     device::{Device, Queue},
+    memory::allocator::StandardMemoryAllocator,
+    pipeline::graphics::{
+        input_assembly::InputAssemblyState,
+        vertex_input::{BuffersDefinition, Vertex},
+    },
     pipeline::{ComputePipeline, Pipeline, PipelineBindPoint},
-    sync::{self, GpuFuture}, impl_vertex,
+    sync::{self, GpuFuture},
 };
 
 #[repr(C)]
-#[derive(Default, Pod, Zeroable, Clone, Copy)]
+#[derive(Clone, Copy, Debug, Default, Zeroable, Pod, Vertex)]
 pub struct ParticleVertex {
+    #[format(R32G32_SFLOAT)]
     position: [f32; 4],
 }
-
-impl_vertex!(ParticleVertex, position);
 
 #[allow(clippy::needless_question_mark)]
 mod cs {
@@ -39,14 +46,15 @@ pub struct Simulation {
 }
 
 fn create_temp_buffer(
+    allocator: &StandardMemoryAllocator,
     device: Arc<Device>,
     data: Vec<ParticleVertex>,
 ) -> Arc<CpuAccessibleBuffer<[ParticleVertex]>> {
     CpuAccessibleBuffer::from_iter(
-        device,
+        allocator,
         BufferUsage {
             transfer_src: true,
-            ..BufferUsage::none()
+            ..BufferUsage::empty()
         },
         false,
         data,
@@ -55,31 +63,33 @@ fn create_temp_buffer(
 }
 
 fn create_local_buffer(
+    allocator: &StandardMemoryAllocator,
     device: Arc<Device>,
     size: usize,
     vertex: bool,
 ) -> Arc<DeviceLocalBuffer<[ParticleVertex]>> {
     DeviceLocalBuffer::<[ParticleVertex]>::array(
-        device.clone(),
+        allocator,
         size as vulkano::DeviceSize,
         BufferUsage {
             storage_buffer: true,
             vertex_buffer: vertex,
             transfer_dst: true,
-            ..BufferUsage::none()
+            ..BufferUsage::empty()
         },
-        device.active_queue_families(),
+        device.active_queue_family_indices().into_iter(),
     )
     .unwrap()
 }
 
 fn copy_buffer(
+    allocator: &StandardMemoryAllocator,
     queue: Arc<Queue>,
     source: Arc<CpuAccessibleBuffer<[ParticleVertex]>>,
     dest: Arc<DeviceLocalBuffer<[ParticleVertex]>>,
 ) {
     let mut cb_builder = AutoCommandBufferBuilder::primary(
-        queue.device().clone(),
+        allocator,
         queue.family(),
         CommandBufferUsage::OneTimeSubmit,
     )
@@ -100,31 +110,48 @@ fn copy_buffer(
 }
 
 impl Simulation {
-    pub fn new(queue: Arc<Queue>, num_particles: usize) -> Self {
+    pub fn new(
+        allocator: &StandardMemoryAllocator,
+        queue: Arc<Queue>,
+        num_particles: usize,
+    ) -> Self {
         // Generate data
         let mut rng = rand::thread_rng();
         let position_data: Vec<ParticleVertex> = (0..num_particles)
             .map(|_| Vector3::from(rng.sample(UnitBall)) * 60.0)
-            .map(|v: Vector3<f32>| ParticleVertex { position: [v.x, v.y, v.z, 1.0] })
+            .map(|v: Vector3<f32>| ParticleVertex {
+                position: [v.x, v.y, v.z, 1.0],
+            })
             .collect();
 
         let velocity_data: Vec<ParticleVertex> = (0..num_particles)
             .map(|_| Vector3::from(rng.sample(UnitBall)) * 0.0001)
-            .map(|v: Vector3<f32>| ParticleVertex { position: [v.x, v.y, v.z, 1.0] })
+            .map(|v: Vector3<f32>| ParticleVertex {
+                position: [v.x, v.y, v.z, 1.0],
+            })
             .collect();
 
         // Create temporary CPU accessible buffers
         let positions = {
-            let temp_positions = create_temp_buffer(queue.device().clone(), position_data);
-            let positions = create_local_buffer(queue.device().clone(), num_particles, true);
-            copy_buffer(queue.clone(), temp_positions, positions.clone());
+            let temp_positions =
+                create_temp_buffer(allocator, queue.device().clone(), position_data);
+            let positions =
+                create_local_buffer(allocator, queue.device().clone(), num_particles, true);
+            copy_buffer(allocator, queue.clone(), temp_positions, positions.clone());
             positions
         };
 
         let velocities = {
-            let temp_velocities = create_temp_buffer(queue.device().clone(), velocity_data);
-            let velocities = create_local_buffer(queue.device().clone(), num_particles, true);
-            copy_buffer(queue.clone(), temp_velocities, velocities.clone());
+            let temp_velocities =
+                create_temp_buffer(allocator, queue.device().clone(), velocity_data);
+            let velocities =
+                create_local_buffer(allocator, queue.device().clone(), num_particles, true);
+            copy_buffer(
+                allocator,
+                queue.clone(),
+                temp_velocities,
+                velocities.clone(),
+            );
             velocities
         };
 
@@ -148,16 +175,17 @@ impl Simulation {
         }
     }
 
-    pub fn advance(&self) {
+    pub fn advance(&self, allocator: &StandardCommandBufferAllocator) {
         let mut builder = AutoCommandBufferBuilder::primary(
-            self.queue.device().clone(),
-            self.queue.family(),
+            allocator,
+            self.queue.queue_family_index(),
             CommandBufferUsage::OneTimeSubmit,
         )
         .unwrap();
 
         let layout = self.pipeline.layout().set_layouts().get(0).unwrap();
         let set = PersistentDescriptorSet::new(
+            allocator,
             layout.clone(),
             [
                 WriteDescriptorSet::buffer(0, self.positions.clone()),

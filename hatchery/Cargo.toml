@@ -1,5 +1,5 @@
 [package]
-name = "tardigrade_launcher"
+name = "hatchery"
 version = "0.1.0"
 edition = "2021"
 authors = ["Lev Kruglyak <lev.kruglyak2014@gmail.com>"]

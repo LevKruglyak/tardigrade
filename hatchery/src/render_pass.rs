@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use vulkano::{
     command_buffer::{
-        allocator::StandardCommandBufferAllocator,
-        AutoCommandBufferBuilder, CommandBufferUsage, RenderPassBeginInfo, SubpassContents,
+        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
+        RenderPassBeginInfo, SubpassContents,
     },
     device::{Device, Queue},
     format::Format,
@@ -14,7 +14,7 @@ use vulkano::{
 use vulkano_util::{context::VulkanoContext, renderer::SwapchainImageView};
 
 use crate::{
-    engine::{Engine, EngineApi},
+    engine::{Engine, EngineApi, RenderInfo},
     gui::GuiImplementation,
 };
 
@@ -28,7 +28,8 @@ pub struct FinalRenderPass {
 impl FinalRenderPass {
     pub fn new(context: &VulkanoContext, format: Format) -> Self {
         let render_pass = Self::create_render_pass(context.device().clone(), format);
-        let allocator = StandardCommandBufferAllocator::new(context.device().clone(), Default::default());
+        let allocator =
+            StandardCommandBufferAllocator::new(context.device().clone(), Default::default());
 
         Self {
             allocator,
@@ -112,7 +113,13 @@ impl FinalRenderPass {
 
         let scale_factor = api.window().scale_factor() as f32;
         let viewport = gui.viewport(scale_factor);
-        engine.render(&mut primary_builder, subpass, viewport, api);
+        let render_info = RenderInfo {
+            command_buffer: &mut primary_builder,
+            subpass,
+            viewport,
+        };
+
+        engine.render(render_info, api);
 
         // Render gui
         primary_builder

@@ -1,67 +1,31 @@
 #![allow(unused_variables)]
 
-use std::time::{Duration, Instant};
+use hatchery::*;
+use egui_implementation::*;
 
-use cloud::CloudPipeline;
-// use cloud::CloudPipeline;
-use gui_implementation::egui;
-use simulation::Simulation;
-use tardigrade_launcher::*;
-use vulkano::device::Features;
-
-mod cloud;
-mod simulation;
-
-pub struct TardigradeEngine {
-    cloud_pipeline: CloudPipeline,
-    simulation: Simulation,
-    last_duration: Duration,
-}
+pub struct TardigradeEngine {}
 
 impl Engine for TardigradeEngine {
-    type Gui = gui_implementation::EguiImplementation;
+    type Gui = EguiImplementation;
 
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 100;
-        let simulation = Simulation::new(context.api().compute_queue(), num_particles);
-
-        let pipeline = CloudPipeline::new(
-            context.api().graphics_queue(),
-            context.viewport_subpass(),
-            simulation.positions(),
-            num_particles,
-        );
-
-        Self {
-            cloud_pipeline: pipeline,
-            simulation,
-            last_duration: Duration::default(),
-        }
+        Self {}
     }
 
     fn render(
         &mut self,
-        command_buffer: &mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
-        subpass: Subpass,
-        viewport: Viewport,
+        info: RenderInfo,
         api: &mut EngineApi,
     ) {
-        self.cloud_pipeline.draw(command_buffer, viewport);
     }
 
     fn immediate(&mut self, context: &mut egui::Context, api: &mut EngineApi) {
         egui::SidePanel::left("left_panel")
             .min_width(200.0)
             .resizable(false)
-            .show(context, |ui| {
-                ui.label(format!("last time: {}", self.last_duration.as_millis()));
-            });
-
-        let start = Instant::now();
-        // self.simulation.advance();
-        self.last_duration = start.elapsed();
+            .show(context, |ui| {});
 
         egui::SidePanel::right("right_panel")
             .min_width(200.0)
@@ -77,7 +41,7 @@ fn main() {
             dimensions: LogicalSize::new(1400, 1000),
         },
         features: Features {
-            ..Features::none()
+            ..Features::empty()
         },
         ..EngineOptions::default()
     };

@@ -19,7 +19,7 @@ use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    window::{Window, WindowId},
+    window::Window,
 };
 
 use crate::{gui::GuiImplementation, performance::EnginePerformance, render_pass::FinalRenderPass};
@@ -115,10 +115,7 @@ where
                     EngineLauncher::render(&mut engine, &mut context);
                 }
                 Event::MainEventsCleared => {
-                    context
-                        .api
-                        .window()
-                        .request_redraw();
+                    context.api.window().request_redraw();
                 }
                 _ => {}
             }
@@ -154,8 +151,6 @@ where
 pub struct EngineApi {
     pub context: VulkanoContext,
     pub surface: Arc<Surface>,
-    pub windows: VulkanoWindows,
-    pub window: WindowId,
     pub performance: EnginePerformance,
 }
 
@@ -181,13 +176,18 @@ impl EngineApi {
     }
 
     pub fn window(&self) -> &Window {
-        self.windows.get_window(self.window).unwrap()
+        self.surface
+            .object()
+            .unwrap()
+            .downcast_ref::<Window>()
+            .unwrap()
     }
 }
 
 pub struct EngineContext<G> {
     api: EngineApi,
     gui: G,
+    windows: VulkanoWindows,
     render_pass: FinalRenderPass,
 }
 
@@ -247,14 +247,13 @@ where
         let api = EngineApi {
             context,
             surface,
-            windows,
-            window,
             performance: Default::default(),
         };
 
         Self {
             api,
             gui,
+            windows,
             render_pass,
         }
     }
@@ -276,16 +275,22 @@ where
     }
 
     pub fn window_renderer(&self) -> &VulkanoWindowRenderer {
-        self.api.windows.get_primary_renderer().unwrap()
+        self.windows.get_primary_renderer().unwrap()
     }
 
     pub fn window_renderer_mut(&mut self) -> &mut VulkanoWindowRenderer {
-        self.api.windows.get_primary_renderer_mut().unwrap()
+        self.windows.get_primary_renderer_mut().unwrap()
     }
 
     pub fn resize(&mut self) {
         self.window_renderer_mut().resize();
     }
+}
+
+pub struct RenderInfo<'a> {
+    pub command_buffer: &'a mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
+    pub subpass: Subpass,
+    pub viewport: Viewport,
 }
 
 /// An implementation of the engine stages, contains input processing and render information
@@ -313,12 +318,5 @@ pub trait Engine {
     }
 
     /// Viewport rendering code goes here
-    fn render(
-        &mut self,
-        command_buffer: &mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
-        subpass: Subpass,
-        viewport: Viewport,
-        api: &mut EngineApi,
-    ) {
-    }
+    fn render(&mut self, info: RenderInfo<'_>, api: &mut EngineApi) {}
 }

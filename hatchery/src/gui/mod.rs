@@ -7,7 +7,7 @@ use vulkano::{
 use winit::{event::WindowEvent, event_loop::EventLoopWindowTarget};
 
 #[cfg(feature = "egui")]
-pub mod egui_implementation;
+pub mod egui;
 
 // An abstraction layer over the gui library to allow for easier switching between two libraries
 
