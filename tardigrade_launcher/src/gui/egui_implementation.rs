@@ -7,7 +7,7 @@ use vulkano::{
     command_buffer::SecondaryAutoCommandBuffer, device::Queue,
     pipeline::graphics::viewport::Viewport, render_pass::Subpass, swapchain::Surface,
 };
-use winit::{event::WindowEvent, window::Window};
+use winit::{event::WindowEvent, event_loop::EventLoopWindowTarget};
 
 pub struct EguiImplementation {
     gui: Gui,
@@ -22,9 +22,14 @@ impl EguiImplementation {
 impl GuiImplementation for EguiImplementation {
     type Context = Context;
 
-    fn new(surface: Arc<Surface<Window>>, graphics_queue: Arc<Queue>, subpass: Subpass) -> Self {
+    fn new(
+        event_loop: &EventLoopWindowTarget<()>,
+        surface: Arc<Surface>,
+        graphics_queue: Arc<Queue>,
+        subpass: Subpass,
+    ) -> Self {
         Self {
-            gui: Gui::new_with_subpass(surface, graphics_queue, subpass),
+            gui: Gui::new_with_subpass(event_loop, surface, None, graphics_queue, subpass),
         }
     }
 

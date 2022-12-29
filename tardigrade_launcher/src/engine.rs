@@ -8,6 +8,7 @@ use vulkano::{
     pipeline::graphics::viewport::Viewport,
     render_pass::Subpass,
     swapchain::Surface,
+    VulkanLibrary,
 };
 use vulkano_util::{
     context::{VulkanoConfig, VulkanoContext},
@@ -17,8 +18,8 @@ use vulkano_util::{
 use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::Window,
+    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
+    window::{Window, WindowId},
 };
 
 use crate::{gui::GuiImplementation, performance::EnginePerformance, render_pass::FinalRenderPass};
@@ -51,13 +52,15 @@ impl Default for EngineOptions {
         Self {
             window_options: Default::default(),
             instance_extensions: InstanceExtensions {
-                ..vulkano_win::required_extensions()
+                ..vulkano_win::required_extensions(&VulkanLibrary::new().unwrap())
             },
             device_extensions: DeviceExtensions {
                 khr_swapchain: true,
-                ..DeviceExtensions::none()
+                ..DeviceExtensions::empty()
             },
-            features: Features { ..Features::none() },
+            features: Features {
+                ..Features::empty()
+            },
         }
     }
 }
@@ -112,7 +115,10 @@ where
                     EngineLauncher::render(&mut engine, &mut context);
                 }
                 Event::MainEventsCleared => {
-                    context.api.surface.window().request_redraw();
+                    context
+                        .api
+                        .window()
+                        .request_redraw();
                 }
                 _ => {}
             }
@@ -147,13 +153,15 @@ where
 /// Contains input system, performance, some graphics objects
 pub struct EngineApi {
     pub context: VulkanoContext,
-    pub surface: Arc<Surface<Window>>,
+    pub surface: Arc<Surface>,
+    pub windows: VulkanoWindows,
+    pub window: WindowId,
     pub performance: EnginePerformance,
 }
 
 impl EngineApi {
     pub fn device(&self) -> Arc<Device> {
-        self.context.device()
+        self.context.device().clone()
     }
 
     pub fn device_name(&self) -> &str {
@@ -165,22 +173,21 @@ impl EngineApi {
     }
 
     pub fn graphics_queue(&self) -> Arc<Queue> {
-        self.context.graphics_queue()
+        self.context.graphics_queue().clone()
     }
 
     pub fn compute_queue(&self) -> Arc<Queue> {
-        self.context.compute_queue()
+        self.context.compute_queue().clone()
     }
 
     pub fn window(&self) -> &Window {
-        self.surface.window()
+        self.windows.get_window(self.window).unwrap()
     }
 }
 
 pub struct EngineContext<G> {
     api: EngineApi,
     gui: G,
-    windows: VulkanoWindows,
     render_pass: FinalRenderPass,
 }
 
@@ -188,7 +195,7 @@ impl<G> EngineContext<G>
 where
     G: GuiImplementation,
 {
-    fn new(mut options: EngineOptions, event_loop: &EventLoop<()>) -> Self {
+    fn new(mut options: EngineOptions, event_loop: &EventLoopWindowTarget<()>) -> Self {
         // Ensure khr_swapchain is enabled
         options.device_extensions.khr_swapchain = true;
 
@@ -207,7 +214,7 @@ where
 
         // Create windows
         let mut windows = VulkanoWindows::default();
-        let _ = windows.create_window(
+        let window = windows.create_window(
             event_loop,
             &context,
             &WindowDescriptor {
@@ -231,21 +238,23 @@ where
 
         // Create gui
         let gui = G::new(
+            event_loop,
             surface.clone(),
-            context.graphics_queue(),
+            context.graphics_queue().clone(),
             render_pass.ui_subpass(),
         );
 
         let api = EngineApi {
             context,
             surface,
+            windows,
+            window,
             performance: Default::default(),
         };
 
         Self {
             api,
             gui,
-            windows,
             render_pass,
         }
     }
@@ -267,11 +276,11 @@ where
     }
 
     pub fn window_renderer(&self) -> &VulkanoWindowRenderer {
-        self.windows.get_primary_renderer().unwrap()
+        self.api.windows.get_primary_renderer().unwrap()
     }
 
     pub fn window_renderer_mut(&mut self) -> &mut VulkanoWindowRenderer {
-        self.windows.get_primary_renderer_mut().unwrap()
+        self.api.windows.get_primary_renderer_mut().unwrap()
     }
 
     pub fn resize(&mut self) {

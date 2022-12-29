@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bytemuck::{Pod, Zeroable};
 use cgmath::Vector3;
 use rand::Rng;
 use rand_distr::UnitBall;
@@ -10,8 +11,16 @@ use vulkano::{
     descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet},
     device::{Device, Queue},
     pipeline::{ComputePipeline, Pipeline, PipelineBindPoint},
-    sync::{self, GpuFuture},
+    sync::{self, GpuFuture}, impl_vertex,
 };
+
+#[repr(C)]
+#[derive(Default, Pod, Zeroable, Clone, Copy)]
+pub struct ParticleVertex {
+    position: [f32; 4],
+}
+
+impl_vertex!(ParticleVertex, position);
 
 #[allow(clippy::needless_question_mark)]
 mod cs {
@@ -23,16 +32,16 @@ mod cs {
 
 pub struct Simulation {
     pipeline: Arc<ComputePipeline>,
-    positions: Arc<DeviceLocalBuffer<[[f32; 4]]>>,
-    velocities: Arc<DeviceLocalBuffer<[[f32; 4]]>>,
+    positions: Arc<DeviceLocalBuffer<[ParticleVertex]>>,
+    velocities: Arc<DeviceLocalBuffer<[ParticleVertex]>>,
     queue: Arc<Queue>,
     num_particles: usize,
 }
 
 fn create_temp_buffer(
     device: Arc<Device>,
-    data: Vec<[f32; 4]>,
-) -> Arc<CpuAccessibleBuffer<[[f32; 4]]>> {
+    data: Vec<ParticleVertex>,
+) -> Arc<CpuAccessibleBuffer<[ParticleVertex]>> {
     CpuAccessibleBuffer::from_iter(
         device,
         BufferUsage {
@@ -49,8 +58,8 @@ fn create_local_buffer(
     device: Arc<Device>,
     size: usize,
     vertex: bool,
-) -> Arc<DeviceLocalBuffer<[[f32; 4]]>> {
-    DeviceLocalBuffer::<[[f32; 4]]>::array(
+) -> Arc<DeviceLocalBuffer<[ParticleVertex]>> {
+    DeviceLocalBuffer::<[ParticleVertex]>::array(
         device.clone(),
         size as vulkano::DeviceSize,
         BufferUsage {
@@ -66,8 +75,8 @@ fn create_local_buffer(
 
 fn copy_buffer(
     queue: Arc<Queue>,
-    source: Arc<CpuAccessibleBuffer<[[f32; 4]]>>,
-    dest: Arc<DeviceLocalBuffer<[[f32; 4]]>>,
+    source: Arc<CpuAccessibleBuffer<[ParticleVertex]>>,
+    dest: Arc<DeviceLocalBuffer<[ParticleVertex]>>,
 ) {
     let mut cb_builder = AutoCommandBufferBuilder::primary(
         queue.device().clone(),
@@ -94,14 +103,14 @@ impl Simulation {
     pub fn new(queue: Arc<Queue>, num_particles: usize) -> Self {
         // Generate data
         let mut rng = rand::thread_rng();
-        let position_data: Vec<[f32; 4]> = (0..num_particles)
+        let position_data: Vec<ParticleVertex> = (0..num_particles)
             .map(|_| Vector3::from(rng.sample(UnitBall)) * 60.0)
-            .map(|v: Vector3<f32>| [v.x, v.y, v.z, 1.0])
+            .map(|v: Vector3<f32>| ParticleVertex { position: [v.x, v.y, v.z, 1.0] })
             .collect();
 
-        let velocity_data: Vec<[f32; 4]> = (0..num_particles)
+        let velocity_data: Vec<ParticleVertex> = (0..num_particles)
             .map(|_| Vector3::from(rng.sample(UnitBall)) * 0.0001)
-            .map(|v: Vector3<f32>| [v.x, v.y, v.z, 1.0])
+            .map(|v: Vector3<f32>| ParticleVertex { position: [v.x, v.y, v.z, 1.0] })
             .collect();
 
         // Create temporary CPU accessible buffers
@@ -184,7 +193,7 @@ impl Simulation {
         future.wait(None).unwrap();
     }
 
-    pub fn positions(&self) -> Arc<DeviceLocalBuffer<[[f32; 4]]>> {
+    pub fn positions(&self) -> Arc<DeviceLocalBuffer<[ParticleVertex]>> {
         self.positions.clone()
     }
 }

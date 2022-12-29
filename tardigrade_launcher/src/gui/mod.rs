@@ -4,7 +4,7 @@ use vulkano::{
     command_buffer::SecondaryAutoCommandBuffer, device::Queue, format::Format,
     pipeline::graphics::viewport::Viewport, render_pass::Subpass, swapchain::Surface,
 };
-use winit::{event::WindowEvent, window::Window};
+use winit::{event::WindowEvent, event_loop::EventLoopWindowTarget};
 
 #[cfg(feature = "egui")]
 pub mod egui_implementation;
@@ -13,7 +13,12 @@ pub mod egui_implementation;
 
 /// Represents an arbitrary immediate mode gui implementation such as imgui-rs or egui
 pub trait GuiImplementation {
-    fn new(surface: Arc<Surface<Window>>, graphics_queue: Arc<Queue>, subpass: Subpass) -> Self;
+    fn new(
+        event_loop: &EventLoopWindowTarget<()>,
+        surface: Arc<Surface>,
+        graphics_queue: Arc<Queue>,
+        subpass: Subpass,
+    ) -> Self;
 
     fn render(&mut self, dimensions: [u32; 2]) -> SecondaryAutoCommandBuffer;
 

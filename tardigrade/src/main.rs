@@ -24,7 +24,7 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 50_000;
+        let num_particles = 100;
         let simulation = Simulation::new(context.api().compute_queue(), num_particles);
 
         let pipeline = CloudPipeline::new(
@@ -60,9 +60,7 @@ impl Engine for TardigradeEngine {
             });
 
         let start = Instant::now();
-        for i in 0..30 {
-            self.simulation.advance();
-        }
+        // self.simulation.advance();
         self.last_duration = start.elapsed();
 
         egui::SidePanel::right("right_panel")
@@ -79,7 +77,6 @@ fn main() {
             dimensions: LogicalSize::new(1400, 1000),
         },
         features: Features {
-            // wide_lines: true,
             ..Features::none()
         },
         ..EngineOptions::default()

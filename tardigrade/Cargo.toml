@@ -9,8 +9,8 @@ tardigrade_launcher = { path = "../tardigrade_launcher", features = ["egui"] }
 cgmath = "0.18"
 rand = "0.8.5"
 bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"] }
-vulkano = "0.30"
-vulkano-util = "0.30"
-vulkano-win = "0.30"
-vulkano-shaders = "0.30"
+vulkano = "0.32"
+vulkano-util = "0.32"
+vulkano-win = "0.32"
+vulkano-shaders = "0.32"
 rand_distr = "0.4.3"
