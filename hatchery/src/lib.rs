@@ -1,6 +1,7 @@
 #![allow(unused_variables, dead_code)]
 
 mod gui;
+pub mod util;
 
 mod engine;
 mod performance;
@@ -15,10 +16,10 @@ pub use engine::WindowOptions;
 pub use engine::RenderInfo;
 pub use gui::GuiImplementation;
 
-pub use vulkano;
-pub use vulkano_util;
-pub use vulkano_shaders;
-pub use bytemuck;
+pub extern crate vulkano;
+pub extern crate vulkano_util;
+pub extern crate vulkano_shaders;
+pub extern crate bytemuck;
 
 pub use vulkano::command_buffer::PrimaryAutoCommandBuffer;
 pub use vulkano::render_pass::Subpass;

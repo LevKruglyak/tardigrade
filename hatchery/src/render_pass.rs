@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use vulkano::{
     command_buffer::{
-        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder, CommandBufferUsage,
+        AutoCommandBufferBuilder, CommandBufferUsage,
         RenderPassBeginInfo, SubpassContents,
     },
     device::{Device, Queue},
@@ -19,7 +19,6 @@ use crate::{
 };
 
 pub struct FinalRenderPass {
-    allocator: StandardCommandBufferAllocator,
     device: Arc<Device>,
     graphics_queue: Arc<Queue>,
     render_pass: Arc<RenderPass>,
@@ -28,11 +27,8 @@ pub struct FinalRenderPass {
 impl FinalRenderPass {
     pub fn new(context: &VulkanoContext, format: Format) -> Self {
         let render_pass = Self::create_render_pass(context.device().clone(), format);
-        let allocator =
-            StandardCommandBufferAllocator::new(context.device().clone(), Default::default());
 
         Self {
-            allocator,
             device: context.device().clone(),
             graphics_queue: context.graphics_queue().clone(),
             render_pass,
@@ -94,7 +90,7 @@ impl FinalRenderPass {
 
         // Create primary command buffer builder
         let mut primary_builder = AutoCommandBufferBuilder::primary(
-            &self.allocator,
+            api.construction.command_allocator(),
             self.graphics_queue.queue_family_index(),
             CommandBufferUsage::OneTimeSubmit,
         )

@@ -13,16 +13,16 @@ egui_winit_vulkano = { version = "0.21", optional = true }
 winit = "0.27.5"
 
 # Vulkano dependencies
-vulkano = "0.32"
-vulkano-util = "0.32"
-vulkano-win = "0.32"
-vulkano-shaders = "0.32"
+bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"], workspace = true }
+vulkano = { version = "0.32", workspace = true }
+vulkano-util = { version = "0.32", workspace = true }
+vulkano-win = { version = "0.32", workspace = true }
+vulkano-shaders = { version = "0.32", workspace = true }
 
 # Utils
 systemstat = "0.1.11"
 lazy_static = "1.4"
 rand = "0.8"
-bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"] }
 
 [features]
 egui = ["dep:egui", "dep:egui_winit_vulkano"]

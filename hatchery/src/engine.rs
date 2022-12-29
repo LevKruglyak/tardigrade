@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use vulkano::{
-    command_buffer::{AutoCommandBufferBuilder, PrimaryAutoCommandBuffer},
+    command_buffer::{
+        AutoCommandBufferBuilder, PrimaryAutoCommandBuffer,
+    },
     device::{physical::PhysicalDeviceType, Device, DeviceExtensions, Features, Queue},
     format::Format,
     instance::{InstanceCreateInfo, InstanceExtensions},
@@ -22,7 +24,10 @@ use winit::{
     window::Window,
 };
 
-use crate::{gui::GuiImplementation, performance::EnginePerformance, render_pass::FinalRenderPass};
+use crate::{
+    gui::GuiImplementation, performance::EnginePerformance, render_pass::FinalRenderPass,
+    util::ConstructionContext,
+};
 
 /// Display options for the winit window
 #[derive(Debug, Clone, Copy)]
@@ -150,6 +155,7 @@ where
 /// Contains input system, performance, some graphics objects
 pub struct EngineApi {
     pub context: VulkanoContext,
+    pub construction: ConstructionContext,
     pub surface: Arc<Surface>,
     pub performance: EnginePerformance,
 }
@@ -181,6 +187,10 @@ impl EngineApi {
             .unwrap()
             .downcast_ref::<Window>()
             .unwrap()
+    }
+
+    pub fn construction(&self) -> &ConstructionContext {
+        &self.construction
     }
 }
 
@@ -244,10 +254,13 @@ where
             render_pass.ui_subpass(),
         );
 
+        let construction = ConstructionContext::new(context.compute_queue().clone());
+
         let api = EngineApi {
             context,
             surface,
             performance: Default::default(),
+            construction,
         };
 
         Self {
@@ -318,5 +331,5 @@ pub trait Engine {
     }
 
     /// Viewport rendering code goes here
-    fn render(&mut self, info: RenderInfo<'_>, api: &mut EngineApi) {}
+    fn render(&mut self, info: RenderInfo, api: &mut EngineApi) {}
 }

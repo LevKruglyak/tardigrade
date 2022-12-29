@@ -5,6 +5,13 @@ members = [
     "hatchery",
 ]
 
+[workspace.dependencies]
+bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"] }
+vulkano = "0.32"
+vulkano-util = "0.32"
+vulkano-win = "0.32"
+vulkano-shaders = "0.32"
+
 [profile.release]
 # lto = "fat"
 incremental = true
