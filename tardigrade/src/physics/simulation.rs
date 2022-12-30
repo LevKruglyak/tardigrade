@@ -1,10 +1,22 @@
+use std::sync::Arc;
+
 use bytemuck::{Pod, Zeroable};
 use cgmath::Vector3;
-use hatchery::util::{
-    buffer::{AbstractBuffer, DeviceBuffer},
-    ConstructionContext,
+use hatchery::{
+    util::{
+        buffer::{AbstractBuffer, DeviceBuffer},
+        ConstructionContext,
+    },
+    AutoCommandBufferBuilder,
 };
-use vulkano::{buffer::BufferUsage, impl_vertex};
+use vulkano::{
+    buffer::BufferUsage,
+    command_buffer::CommandBufferUsage,
+    descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet},
+    impl_vertex,
+    pipeline::{ComputePipeline, Pipeline, PipelineBindPoint},
+    sync::{self, GpuFuture},
+};
 
 pub struct Particle {
     position: Vector3<f32>,
@@ -38,7 +50,20 @@ pub struct ParticleVelocityMass {
 
 impl_vertex!(ParticleVelocityMass, data);
 
+mod cs {
+    vulkano_shaders::shader! {
+        ty: "compute",
+        path: "src/physics/simulation.glsl",
+        types_meta: {
+            use bytemuck::{Pod, Zeroable};
+
+            #[derive(Clone, Copy, Zeroable, Pod)]
+        },
+    }
+}
+
 pub struct Simulation {
+    pipeline: Arc<ComputePipeline>,
     positions: DeviceBuffer<ParticlePosition>,
     velocity_masses: DeviceBuffer<ParticleVelocityMass>,
     num_particles: u64,
@@ -46,6 +71,16 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new(context: &ConstructionContext, particles: Vec<Particle>) -> Self {
+        let cs = cs::load(context.device()).unwrap();
+        let pipeline = ComputePipeline::new(
+            context.device(),
+            cs.entry_point("main").unwrap(),
+            &(),
+            None,
+            |_| {},
+        )
+        .unwrap();
+
         Self {
             positions: DeviceBuffer::from_vec(
                 context,
@@ -75,7 +110,54 @@ impl Simulation {
                     .collect(),
             ),
             num_particles: particles.len() as u64,
+            pipeline,
         }
+    }
+
+    pub fn advance(&self, context: &ConstructionContext) {
+        let mut builder = AutoCommandBufferBuilder::primary(
+            context.command_allocator(),
+            context.queue().queue_family_index(),
+            CommandBufferUsage::OneTimeSubmit,
+        )
+        .unwrap();
+
+        let layout = self.pipeline.layout().set_layouts().get(0).unwrap();
+        let set = PersistentDescriptorSet::new(
+            context.descriptor_allocator(),
+            layout.clone(),
+            [
+                WriteDescriptorSet::buffer(0, self.positions.buffer()),
+                WriteDescriptorSet::buffer(1, self.velocity_masses.buffer()),
+            ],
+        )
+        .unwrap();
+
+        let data = cs::ty::SimulationData {
+            buffer_size: self.num_particles as u32,
+        };
+
+        builder
+            .bind_pipeline_compute(self.pipeline.clone())
+            .push_constants(self.pipeline.layout().clone(), 0, data)
+            .bind_descriptor_sets(
+                PipelineBindPoint::Compute,
+                self.pipeline.layout().clone(),
+                0,
+                set,
+            )
+            .dispatch([self.num_particles as u32 / 64 + 1, 1, 1])
+            .unwrap();
+
+        let command_buffer = builder.build().unwrap();
+
+        let future = sync::now(context.device())
+            .then_execute(context.queue(), command_buffer)
+            .unwrap()
+            .then_signal_fence_and_flush()
+            .unwrap();
+
+        future.wait(None).unwrap();
     }
 
     pub fn particles(&self) -> &DeviceBuffer<ParticlePosition> {

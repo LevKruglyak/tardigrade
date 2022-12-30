@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use vulkano::{
     command_buffer::allocator::StandardCommandBufferAllocator,
+    descriptor_set::allocator::StandardDescriptorSetAllocator,
     device::{Device, Queue},
     memory::allocator::{MemoryAllocator, StandardMemoryAllocator},
 };
@@ -12,6 +13,7 @@ pub mod quad;
 pub struct ConstructionContext {
     memory_allocator: StandardMemoryAllocator,
     command_allocator: StandardCommandBufferAllocator,
+    descriptor_allocator: StandardDescriptorSetAllocator,
     queue: Arc<Queue>,
     device: Arc<Device>,
 }
@@ -24,6 +26,7 @@ impl ConstructionContext {
                 queue.device().clone(),
                 Default::default(),
             ),
+            descriptor_allocator: StandardDescriptorSetAllocator::new(queue.device().clone()),
             queue: queue.clone(),
             device: queue.device().clone(),
         }
@@ -35,6 +38,10 @@ impl ConstructionContext {
 
     pub fn command_allocator(&self) -> &StandardCommandBufferAllocator {
         &self.command_allocator
+    }
+
+    pub fn descriptor_allocator(&self) -> &StandardDescriptorSetAllocator {
+        &self.descriptor_allocator
     }
 
     pub fn family(&self) -> u32 {

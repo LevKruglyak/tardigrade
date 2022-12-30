@@ -2,13 +2,13 @@
 
 use std::time::Instant;
 
-use cgmath::{Matrix3, Matrix4, Point3, Rad, Vector3};
+use cgmath::{Rotation, InnerSpace, Matrix3, Matrix4, Point3, Rad, Vector3, Deg};
 use egui_implementation::*;
 use graphics::renderer::{Renderer, ViewData};
 use hatchery::*;
 use physics::simulation::{Particle, Simulation};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use rand_distr::UnitBall;
+use rand_distr::{UnitBall, UnitSphere};
 
 mod graphics;
 mod physics;
@@ -37,9 +37,9 @@ pub struct TardigradeEngine {
 }
 
 fn create_particle(rng: &mut ThreadRng) -> Particle {
-    let position = Vector3::from(rng.sample(UnitBall)) * 5.0;
+    let position = Vector3::from(rng.sample(UnitSphere)) * 10.0;
     let velocity = Vector3::new(0.0, 0.0, 0.0);
-    let mass = 1.0;
+    let mass = 0.2;
 
     Particle::new(position, velocity, mass)
 }
@@ -53,12 +53,11 @@ impl Engine for TardigradeEngine {
         let num_particles = 100_000;
 
         let mut rng = thread_rng();
-        let simulation = Simulation::new(
-            context.api().construction(),
-            (0..num_particles)
-                .map(|_| create_particle(&mut rng))
-                .collect(),
-        );
+        let particles: Vec<Particle> = (0..num_particles)
+            .map(|_| create_particle(&mut rng))
+            .collect();
+
+        let simulation = Simulation::new(context.api().construction(), particles);
 
         Self {
             simulation,
@@ -70,8 +69,8 @@ impl Engine for TardigradeEngine {
 
     fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
         let elapsed = self.elapsed.elapsed();
-        let rotation =
-            1.0 * (elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 / 1_000_000_000.0);
+        let rotation = 0.0;
+        // 1.0 * (elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 / 1_000_000_000.0);
         let rotation = Matrix3::from_angle_y(Rad(0.1 * rotation as f32));
 
         let aspect_ratio = info.viewport.dimensions[0] / info.viewport.dimensions[1];
@@ -89,6 +88,8 @@ impl Engine for TardigradeEngine {
             proj,
         };
 
+        self.simulation.advance(api.construction());
+
         self.renderer.draw_particles(
             self.simulation.particles(),
             view,
@@ -104,11 +105,11 @@ impl Engine for TardigradeEngine {
             .resizable(false)
             .show(context, |ui| {
                 ui.label("Scale:");
-                ui.add(egui::Slider::new(&mut self.state.scale, 0.01..=0.8))
+                ui.add(egui::Slider::new(&mut self.state.scale, 0.0001..=1.0).logarithmic(true))
                     .changed();
 
                 ui.label("Size:");
-                ui.add(egui::Slider::new(&mut self.state.size, 0.01..=0.1))
+                ui.add(egui::Slider::new(&mut self.state.size, 0.001..=0.1))
                     .changed();
 
                 ui.label("Brightness:");
