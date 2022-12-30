@@ -29,8 +29,10 @@ impl Renderer {
         &mut self,
         particles: &DeviceBuffer<ParticlePosition>,
         view: ViewData,
+        brightness: f32,
+        size: f32,
         info: &mut RenderInfo,
     ) {
-        self.particles_pipeline.draw(particles, view, info)
+        self.particles_pipeline.draw(particles, view, brightness, size, info)
     }
 }

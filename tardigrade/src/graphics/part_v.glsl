@@ -5,15 +5,19 @@ layout(location = 1) in vec2 uv;
 layout(location = 2) in vec4 p_pos;
 
 layout(location = 0) out vec2 f_uv;
+layout(location = 1) out float f_brightness;
 
 layout(push_constant) uniform UniformData {
     mat4 world;
     mat4 view;
     mat4 proj;
+    float brightness;
+    float size;
 } uniforms;
 
 void main() {
     mat4 worldview = uniforms.view * uniforms.world;
-    gl_Position = 0.01 * vec4(position.xy, 0.0, 0.0) + uniforms.proj * worldview * vec4(p_pos.xyz, 1.0);
+    gl_Position = uniforms.size * vec4(position.xy, 0.0, 0.0) + uniforms.proj * worldview * vec4(p_pos.xyz, 1.0);
     f_uv = uv;
+    f_brightness = uniforms.brightness;
 }

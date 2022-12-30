@@ -13,9 +13,26 @@ use rand_distr::UnitBall;
 mod graphics;
 mod physics;
 
+pub struct GuiState {
+    pub scale: f32,
+    pub brightness: f32,
+    pub size: f32,
+}
+
+impl Default for GuiState {
+    fn default() -> Self {
+        Self {
+            scale: 0.1,
+            brightness: 0.1,
+            size: 0.01,
+        }
+    }
+}
+
 pub struct TardigradeEngine {
     simulation: Simulation,
     renderer: Renderer,
+    state: GuiState,
     elapsed: Instant,
 }
 
@@ -47,6 +64,7 @@ impl Engine for TardigradeEngine {
             simulation,
             renderer: Renderer::new(context.api().construction(), context.viewport_subpass()),
             elapsed: Instant::now(),
+            state: Default::default(),
         }
     }
 
@@ -63,7 +81,7 @@ impl Engine for TardigradeEngine {
             Point3::new(0.0, 0.0, 0.0),
             Vector3::new(0.0, -1.0, 0.0),
         );
-        let scale = Matrix4::from_scale(0.01);
+        let scale = Matrix4::from_scale(self.state.scale);
 
         let view = ViewData {
             world: Matrix4::from(rotation),
@@ -71,20 +89,32 @@ impl Engine for TardigradeEngine {
             proj,
         };
 
-        self.renderer
-            .draw_particles(self.simulation.particles(), view, info);
+        self.renderer.draw_particles(
+            self.simulation.particles(),
+            view,
+            self.state.brightness,
+            self.state.size,
+            info,
+        );
     }
 
     fn immediate(&mut self, context: &mut egui::Context, api: &mut EngineApi) {
         egui::SidePanel::left("left_panel")
-            .min_width(200.0)
+            .min_width(400.0)
             .resizable(false)
-            .show(context, |ui| if ui.button("hello").clicked() {});
+            .show(context, |ui| {
+                ui.label("Scale:");
+                ui.add(egui::Slider::new(&mut self.state.scale, 0.01..=0.8))
+                    .changed();
 
-        egui::SidePanel::right("right_panel")
-            .min_width(200.0)
-            .resizable(false)
-            .show(context, |ui| {});
+                ui.label("Size:");
+                ui.add(egui::Slider::new(&mut self.state.size, 0.01..=0.1))
+                    .changed();
+
+                ui.label("Brightness:");
+                ui.add(egui::Slider::new(&mut self.state.brightness, 0.01..=0.8))
+                    .changed();
+            });
     }
 }
 

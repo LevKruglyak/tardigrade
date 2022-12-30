@@ -58,7 +58,7 @@ impl ParticlesPipeline {
             .build(context.device())
             .expect("failed to make pipeline");
 
-        let particle = TexturedQuad::new(context, [0.0, 0.0], [1.0, 1.0]);
+        let particle = TexturedQuad::new(context, [-1.0, -1.0], [1.0, 1.0]);
 
         Self {
             pipeline,
@@ -71,6 +71,8 @@ impl ParticlesPipeline {
         &mut self,
         particles: &DeviceBuffer<ParticlePosition>,
         view: ViewData,
+        brightness: f32,
+        size: f32,
         info: &mut RenderInfo,
     ) {
         let mut builder = info.create_builder();
@@ -79,6 +81,8 @@ impl ParticlesPipeline {
             world: view.world.into(),
             proj: view.proj.into(),
             view: view.view.into(),
+            brightness,
+            size,
         };
 
         builder
