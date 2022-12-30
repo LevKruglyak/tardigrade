@@ -16,7 +16,7 @@ layout(push_constant) uniform SimulationData {
 
 vec3 calculate_accel(vec3 target, vec3 position) {
     float dist2 = dot(position - target, position - target);
-    return 0.000001 * (target - position) / pow(dist2 + 0.1, 1.5);
+    return 0.00000001 * (target - position) / pow(dist2 + 0.1, 1.5);
 }
 
 void main() {

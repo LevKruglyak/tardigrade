@@ -37,9 +37,9 @@ pub struct TardigradeEngine {
 }
 
 fn create_particle(rng: &mut ThreadRng) -> Particle {
-    let position = Vector3::from(rng.sample(UnitSphere)) * 10.0;
+    let position = Vector3::from(rng.sample(UnitSphere)) * 5.0;
     let velocity = Vector3::new(0.0, 0.0, 0.0);
-    let mass = 0.2;
+    let mut mass = 0.25;
 
     Particle::new(position, velocity, mass)
 }
@@ -50,7 +50,7 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 100_000;
+        let num_particles = 200_000;
 
         let mut rng = thread_rng();
         let particles: Vec<Particle> = (0..num_particles)
@@ -94,7 +94,7 @@ impl Engine for TardigradeEngine {
             self.simulation.particles(),
             view,
             self.state.brightness,
-            self.state.size,
+            10.0 * self.state.size * self.state.scale,
             info,
         );
     }

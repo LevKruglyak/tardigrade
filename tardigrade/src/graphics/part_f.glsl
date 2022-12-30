@@ -7,6 +7,6 @@ layout(location = 0) out vec4 f_color;
 
 
 void main() {
-    float radius = 0.25 - length(f_uv - vec2(0.5));
-    f_color = vec4(1.0, 1.0, 1.0, f_brightness * radius);
+    float radius = clamp(0.5 - length(f_uv - vec2(0.5)), 0.0, 0.5);
+    f_color = vec4(1.0, 1.0, 1.0, f_brightness * radius * radius);
 }
