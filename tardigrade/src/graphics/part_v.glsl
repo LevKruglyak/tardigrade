@@ -14,6 +14,6 @@ layout(push_constant) uniform UniformData {
 
 void main() {
     mat4 worldview = uniforms.view * uniforms.world;
-    gl_Position = uniforms.proj * worldview * vec4(p_pos.xyz + vec3(position.xy, 0.0), 1.0);
+    gl_Position = 0.01 * vec4(position.xy, 0.0, 0.0) + uniforms.proj * worldview * vec4(p_pos.xyz, 1.0);
     f_uv = uv;
 }

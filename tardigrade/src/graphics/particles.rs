@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use cgmath::{Matrix4, Vector3, Point3, Rad, Matrix3};
 use hatchery::{
     util::{
         buffer::{AbstractBuffer, DeviceBuffer},
@@ -11,14 +10,14 @@ use hatchery::{
 };
 use vulkano::pipeline::{
     graphics::{
-        color_blend::ColorBlendState,
-        input_assembly::InputAssemblyState,
-        viewport::ViewportState,
+        color_blend::ColorBlendState, input_assembly::InputAssemblyState, viewport::ViewportState,
     },
     GraphicsPipeline, Pipeline,
 };
 
 use crate::physics::simulation::ParticlePosition;
+use super::renderer::ViewData;
+
 mod vs {
     vulkano_shaders::shader! {
         ty: "vertex",
@@ -51,7 +50,7 @@ impl ParticlesPipeline {
         let pipeline = GraphicsPipeline::start()
             .vertex_input_state(TexturedQuad::buffers_definition().instance::<ParticlePosition>())
             .vertex_shader(vs.entry_point("main").unwrap(), ())
-            .input_assembly_state( InputAssemblyState::new())
+            .input_assembly_state(InputAssemblyState::new())
             .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
             .fragment_shader(fs.entry_point("main").unwrap(), ())
             .render_pass(subpass.clone())
@@ -68,29 +67,18 @@ impl ParticlesPipeline {
         }
     }
 
-    pub fn draw(&mut self, particles: &DeviceBuffer<ParticlePosition>, info: &mut RenderInfo) {
+    pub fn draw(
+        &mut self,
+        particles: &DeviceBuffer<ParticlePosition>,
+        view: ViewData,
+        info: &mut RenderInfo,
+    ) {
         let mut builder = info.create_builder();
 
-        let uniform = {
-            let rotation = 0.0;
-                // 10.0 * (elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 / 1_000_000_000.0);
-            let rotation = Matrix3::from_angle_y(Rad(0.1 * rotation as f32));
-
-            let aspect_ratio = info.viewport.dimensions[0] / info.viewport.dimensions[1];
-            let proj =
-                cgmath::perspective(Rad(std::f32::consts::FRAC_PI_2), aspect_ratio, 0.01, 100.0);
-            let view = Matrix4::look_at_rh(
-                Point3::new(0.3, 0.3, 1.0),
-                Point3::new(0.0, 0.0, 0.0),
-                Vector3::new(0.0, -1.0, 0.0),
-            );
-            let scale = Matrix4::from_scale(0.01);
-
-            vs::ty::UniformData {
-                world: Matrix4::from(rotation).into(),
-                view: (view * scale).into(),
-                proj: proj.into(),
-            }
+        let uniform = vs::ty::UniformData {
+            world: view.world.into(),
+            proj: view.proj.into(),
+            view: view.view.into(),
         };
 
         builder

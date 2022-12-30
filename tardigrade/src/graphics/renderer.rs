@@ -1,3 +1,4 @@
+use cgmath::Matrix4;
 use hatchery::{
     util::{buffer::DeviceBuffer, ConstructionContext},
     RenderInfo, Subpass,
@@ -6,6 +7,12 @@ use hatchery::{
 use crate::physics::simulation::ParticlePosition;
 
 use super::particles::ParticlesPipeline;
+
+pub struct ViewData {
+    pub world: Matrix4<f32>,
+    pub view: Matrix4<f32>,
+    pub proj: Matrix4<f32>,
+}
 
 pub struct Renderer {
     particles_pipeline: ParticlesPipeline,
@@ -21,8 +28,9 @@ impl Renderer {
     pub fn draw_particles(
         &mut self,
         particles: &DeviceBuffer<ParticlePosition>,
+        view: ViewData,
         info: &mut RenderInfo,
     ) {
-        self.particles_pipeline.draw(particles, info)
+        self.particles_pipeline.draw(particles, view, info)
     }
 }
