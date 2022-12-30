@@ -6,12 +6,13 @@ authors = ["Lev Kruglyak <lev.kruglyak2014@gmail.com>"]
 
 [dependencies]
 hatchery = { path = "../hatchery", features = ["egui"] }
-cgmath = "0.18"
 rand = "0.8.5"
 rand_distr = "0.4.3"
 
+cgmath = "0.18.0"
+
 bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"], workspace = true }
-vulkano = { version = "0.32", workspace = true }
+vulkano = { version = "0.32" }
 vulkano-util = { version = "0.32", workspace = true }
 vulkano-win = { version = "0.32", workspace = true }
 vulkano-shaders = { version = "0.32", workspace = true }

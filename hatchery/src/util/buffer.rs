@@ -11,20 +11,25 @@ use vulkano::{
 
 use super::ConstructionContext;
 
+// Usages
+
 // Trait alias workaround
 pub trait BufferData: Pod + Send + Sync {}
 impl<T> BufferData for T where T: Pod + Send + Sync {}
 
 #[allow(clippy::len_without_is_empty)]
 pub trait AbstractBuffer<T: BufferData> {
+    type Buffer: TypedBufferAccess<Content = [T]>;
+
     /// Create an empty buffer with specified length
     fn new(context: &ConstructionContext, usage: BufferUsage, len: u64) -> Self;
 
     /// Create a buffer from a vector of data
     fn from_vec(context: &ConstructionContext, usage: BufferUsage, data: Vec<T>) -> Self;
 
-    /// Get the vulkan buffer
     fn buffer(&self) -> Arc<dyn BufferAccess>;
+
+    fn typed_buffer(&self) -> Arc<Self::Buffer>; 
 
     fn copy<B: AbstractBuffer<T>>(&self, context: &ConstructionContext, src: &B) {
         let mut cb_builder = AutoCommandBufferBuilder::primary(
@@ -49,7 +54,7 @@ pub trait AbstractBuffer<T: BufferData> {
     }
 
     /// Length of the buffer
-    fn len(&self) -> u64;
+    fn len(&self) -> u32;
 }
 
 /// Buffer that is accessible only from the GPU
@@ -58,6 +63,8 @@ pub struct DeviceBuffer<T: BufferData> {
 }
 
 impl<T: BufferData> AbstractBuffer<T> for DeviceBuffer<T> {
+    type Buffer = DeviceLocalBuffer<[T]>;
+
     fn new(context: &ConstructionContext, usage: BufferUsage, len: u64) -> Self {
         Self {
             buffer: DeviceLocalBuffer::array(
@@ -87,18 +94,22 @@ impl<T: BufferData> AbstractBuffer<T> for DeviceBuffer<T> {
                 transfer_dst: true,
                 ..BufferUsage::empty()
             }),
-            temp.len(),
+            temp.len() as u64,
         );
         result.copy(context, &temp);
 
         result
     }
 
-    fn len(&self) -> u64 {
-        self.buffer.len()
+    fn len(&self) -> u32 {
+        self.buffer.len() as u32
     }
 
     fn buffer(&self) -> Arc<dyn BufferAccess> {
+        self.buffer.clone()
+    }
+
+    fn typed_buffer(&self) -> Arc<Self::Buffer> {
         self.buffer.clone()
     }
 }
@@ -109,6 +120,8 @@ pub struct SharedBuffer<T: BufferData> {
 }
 
 impl<T: BufferData> AbstractBuffer<T> for SharedBuffer<T> {
+    type Buffer = CpuAccessibleBuffer<[T]>;
+
     fn new(context: &ConstructionContext, usage: BufferUsage, len: u64) -> Self {
         Self {
             // Sort of unecessary, could just call `from_vec` with empty array
@@ -131,11 +144,15 @@ impl<T: BufferData> AbstractBuffer<T> for SharedBuffer<T> {
         }
     }
 
-    fn len(&self) -> u64 {
-        self.buffer.len()
+    fn len(&self) -> u32 {
+        self.buffer.len() as u32
     }
 
     fn buffer(&self) -> Arc<dyn BufferAccess> {
+        self.buffer.clone()
+    }
+
+    fn typed_buffer(&self) -> Arc<Self::Buffer> {
         self.buffer.clone()
     }
 }

@@ -7,6 +7,7 @@ use vulkano::{
 };
 
 pub mod buffer;
+pub mod quad;
 
 pub struct ConstructionContext {
     memory_allocator: StandardMemoryAllocator,

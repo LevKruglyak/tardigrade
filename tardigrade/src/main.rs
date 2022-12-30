@@ -1,13 +1,28 @@
-#![allow(unused_variables)]
+#![allow(unused_variables, dead_code)]
 
+use cgmath::Vector3;
 use egui_implementation::*;
-use hatchery::{
-    util::buffer::{AbstractBuffer, DeviceBuffer},
-    *,
-};
-use vulkano::buffer::BufferUsage;
+use graphics::renderer::Renderer;
+use hatchery::*;
+use physics::simulation::{Particle, Simulation};
+use rand::{rngs::ThreadRng, thread_rng, Rng};
+use rand_distr::UnitBall;
 
-pub struct TardigradeEngine {}
+mod physics;
+mod graphics;
+
+pub struct TardigradeEngine {
+    simulation: Simulation,
+    renderer: Renderer,
+}
+
+fn create_particle(rng: &mut ThreadRng) -> Particle {
+    let position = Vector3::from(rng.sample(UnitBall)) * 100.0;
+    let velocity = Vector3::new(0.0, 0.0, 0.0);
+    let mass = 1.0;
+
+    Particle::new(position, velocity, mass)
+}
 
 impl Engine for TardigradeEngine {
     type Gui = EguiImplementation;
@@ -15,19 +30,22 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let buffer: DeviceBuffer<f32> = DeviceBuffer::new(
+        let num_particles = 10_000;
+
+        let mut rng = thread_rng();
+        let simulation = Simulation::new(
             context.api().construction(),
-            BufferUsage {
-                vertex_buffer: true,
-                ..BufferUsage::default()
-            },
-            1000,
+            (0..num_particles)
+                .map(|_| create_particle(&mut rng))
+                .collect(),
         );
 
-        Self {}
+        Self { simulation, renderer: Renderer::new(context.api().construction(), context.viewport_subpass())}
     }
 
-    fn render(&mut self, info: RenderInfo, api: &mut EngineApi) {}
+    fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
+        self.renderer.draw_particles(self.simulation.particles(), info);
+    }
 
     fn immediate(&mut self, context: &mut egui::Context, api: &mut EngineApi) {
         egui::SidePanel::left("left_panel")

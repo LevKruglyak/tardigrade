@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use vulkano::{
     command_buffer::{
-        AutoCommandBufferBuilder, PrimaryAutoCommandBuffer,
+        allocator::StandardCommandBufferAllocator, AutoCommandBufferBuilder,
+        CommandBufferInheritanceInfo, CommandBufferUsage, PrimaryAutoCommandBuffer,
+        SecondaryAutoCommandBuffer,
     },
     device::{physical::PhysicalDeviceType, Device, DeviceExtensions, Features, Queue},
     format::Format,
@@ -302,8 +304,31 @@ where
 
 pub struct RenderInfo<'a> {
     pub command_buffer: &'a mut AutoCommandBufferBuilder<PrimaryAutoCommandBuffer>,
+    pub command_allocator: &'a StandardCommandBufferAllocator,
+    pub queue: Arc<Queue>,
     pub subpass: Subpass,
     pub viewport: Viewport,
+}
+
+impl RenderInfo<'_> {
+    pub fn create_builder(&self) -> AutoCommandBufferBuilder<SecondaryAutoCommandBuffer> {
+        AutoCommandBufferBuilder::secondary(
+            self.command_allocator,
+            self.queue.queue_family_index(),
+            CommandBufferUsage::OneTimeSubmit,
+            CommandBufferInheritanceInfo {
+                render_pass: Some(self.subpass.clone().into()),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+    }
+
+    pub fn execute(&mut self, builder: AutoCommandBufferBuilder<SecondaryAutoCommandBuffer>) {
+        self.command_buffer
+            .execute_commands(builder.build().unwrap())
+            .unwrap();
+    }
 }
 
 /// An implementation of the engine stages, contains input processing and render information
@@ -331,5 +356,5 @@ pub trait Engine {
     }
 
     /// Viewport rendering code goes here
-    fn render(&mut self, info: RenderInfo, api: &mut EngineApi) {}
+    fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {}
 }

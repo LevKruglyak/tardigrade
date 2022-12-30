@@ -109,13 +109,15 @@ impl FinalRenderPass {
 
         let scale_factor = api.window().scale_factor() as f32;
         let viewport = gui.viewport(scale_factor);
-        let render_info = RenderInfo {
+        let mut render_info = RenderInfo {
             command_buffer: &mut primary_builder,
+            queue: self.graphics_queue.clone(),
+            command_allocator: api.construction().command_allocator(),
             subpass,
             viewport,
         };
 
-        engine.render(render_info, api);
+        engine.render(&mut render_info, api);
 
         // Render gui
         primary_builder
