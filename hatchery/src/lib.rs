@@ -28,6 +28,7 @@ pub use vulkano::{
 };
 pub use vulkano::device::Features;
 pub use winit::dpi::LogicalSize;
+pub use winit::event::*;
 
 #[cfg(feature = "egui")]
 pub mod egui_implementation {

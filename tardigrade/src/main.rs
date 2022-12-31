@@ -2,19 +2,19 @@
 
 use std::time::Instant;
 
-use cgmath::{Rotation, InnerSpace, Matrix3, Matrix4, Point3, Rad, Vector3, Deg};
+use crate::graphics::view::Camera;
+use cgmath::Vector3;
 use egui_implementation::*;
-use graphics::renderer::{Renderer, ViewData};
+use graphics::renderer::Renderer;
 use hatchery::*;
 use physics::simulation::{Particle, Simulation};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use rand_distr::{UnitBall, UnitSphere};
+use rand_distr::UnitSphere;
 
 mod graphics;
 mod physics;
 
 pub struct GuiState {
-    pub scale: f32,
     pub brightness: f32,
     pub size: f32,
 }
@@ -22,7 +22,6 @@ pub struct GuiState {
 impl Default for GuiState {
     fn default() -> Self {
         Self {
-            scale: 0.1,
             brightness: 0.1,
             size: 0.01,
         }
@@ -32,14 +31,15 @@ impl Default for GuiState {
 pub struct TardigradeEngine {
     simulation: Simulation,
     renderer: Renderer,
+    camera: Camera,
     state: GuiState,
     elapsed: Instant,
 }
 
 fn create_particle(rng: &mut ThreadRng) -> Particle {
-    let position = Vector3::from(rng.sample(UnitSphere)) * 5.0;
+    let position = Vector3::from(rng.sample(UnitSphere)) * 10.0;
     let velocity = Vector3::new(0.0, 0.0, 0.0);
-    let mut mass = 0.25;
+    let mass = 1.0;
 
     Particle::new(position, velocity, mass)
 }
@@ -50,7 +50,7 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 200_000;
+        let num_particles = 50_000;
 
         let mut rng = thread_rng();
         let particles: Vec<Particle> = (0..num_particles)
@@ -63,38 +63,21 @@ impl Engine for TardigradeEngine {
             simulation,
             renderer: Renderer::new(context.api().construction(), context.viewport_subpass()),
             elapsed: Instant::now(),
+            camera: Camera::new(),
             state: Default::default(),
         }
     }
 
     fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
         let elapsed = self.elapsed.elapsed();
-        let rotation = 0.0;
-        // 1.0 * (elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 / 1_000_000_000.0);
-        let rotation = Matrix3::from_angle_y(Rad(0.1 * rotation as f32));
 
-        let aspect_ratio = info.viewport.dimensions[0] / info.viewport.dimensions[1];
-        let proj = cgmath::perspective(Rad(std::f32::consts::FRAC_PI_2), aspect_ratio, 0.01, 100.0);
-        let view = Matrix4::look_at_rh(
-            Point3::new(0.3, 0.3, 1.0),
-            Point3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, -1.0, 0.0),
-        );
-        let scale = Matrix4::from_scale(self.state.scale);
-
-        let view = ViewData {
-            world: Matrix4::from(rotation),
-            view: (view * scale),
-            proj,
-        };
-
-        self.simulation.advance(api.construction());
+        // self.simulation.advance(api.construction());
 
         self.renderer.draw_particles(
             self.simulation.particles(),
-            view,
+            self.camera.generate_view(info.viewport.dimensions[0] / info.viewport.dimensions[1]),
             self.state.brightness,
-            10.0 * self.state.size * self.state.scale,
+            10.0 * self.state.size,
             info,
         );
     }
@@ -104,19 +87,45 @@ impl Engine for TardigradeEngine {
             .min_width(400.0)
             .resizable(false)
             .show(context, |ui| {
-                ui.label("Scale:");
-                ui.add(egui::Slider::new(&mut self.state.scale, 0.0001..=1.0).logarithmic(true))
-                    .changed();
-
                 ui.label("Size:");
                 ui.add(egui::Slider::new(&mut self.state.size, 0.001..=0.1))
                     .changed();
 
                 ui.label("Brightness:");
-                ui.add(egui::Slider::new(&mut self.state.brightness, 0.01..=0.8))
+                ui.add(egui::Slider::new(&mut self.state.brightness, 0.01..=1.0))
                     .changed();
             });
     }
+
+    fn on_winit_event(&mut self, event: &WindowEvent, api: &mut EngineApi) {
+        match event {
+            WindowEvent::KeyboardInput { input, .. } => self.on_keyboard_event(input),
+            WindowEvent::MouseInput { state, button, .. } => {
+                self.on_mouse_click_event(*state, *button)
+            }
+            // WindowEvent::CursorMoved { position, .. } => self.on_cursor_moved_event(position),
+            // WindowEvent::MouseWheel { delta, .. } => self.on_mouse_wheel_event(delta),
+            _ => {}
+        }
+    }
+}
+
+impl TardigradeEngine {
+    fn on_keyboard_event(&mut self, input: &KeyboardInput) {
+        if let Some(key_code) = input.virtual_keycode {
+            match key_code {
+                VirtualKeyCode::W => self.camera.forward(),
+                VirtualKeyCode::S => self.camera.backward(),
+                VirtualKeyCode::D => self.camera.right(),
+                VirtualKeyCode::A => self.camera.left(),
+                _ => (),
+            }
+        }
+    }
+
+     fn on_mouse_click_event(&mut self, state: ElementState, button: MouseButton) {
+
+     }
 }
 
 fn main() {

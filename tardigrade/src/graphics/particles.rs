@@ -16,7 +16,7 @@ use vulkano::pipeline::{
 };
 
 use crate::physics::simulation::ParticlePosition;
-use super::renderer::ViewData;
+use crate::graphics::view::ViewData;
 
 mod vs {
     vulkano_shaders::shader! {
@@ -82,7 +82,7 @@ impl ParticlesPipeline {
             proj: view.proj.into(),
             view: view.view.into(),
             brightness,
-            size,
+            size: size * view.scale,
         };
 
         builder
