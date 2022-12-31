@@ -1,4 +1,4 @@
-use cgmath::{Deg, Matrix3, Matrix4, Point3, Rad, Vector3, SquareMatrix};
+use cgmath::{Deg, Matrix4, Point3, Vector3, SquareMatrix};
 
 pub struct ViewData {
     pub world: Matrix4<f32>,
@@ -52,10 +52,22 @@ impl Camera {
     }
 
     pub fn left(&mut self) {
-        self.position.z += self.scale;
+        self.position += self.scale * self.up.cross(self.direction);
     }
 
     pub fn right(&mut self) {
-        self.position.z -= self.scale;
+        self.position -= self.scale * self.up.cross(self.direction);
+    }
+
+    pub fn up(&mut self) {
+        self.position += self.scale * self.up;
+    }
+
+    pub fn down(&mut self) {
+        self.position -= self.scale * self.up;
+    }
+
+    pub fn zoom(&mut self, change: f32) {
+        self.scale *= (0.01 * change).exp();
     }
 }

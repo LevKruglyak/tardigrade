@@ -6,7 +6,13 @@ use crate::graphics::view::Camera;
 use cgmath::Vector3;
 use egui_implementation::*;
 use graphics::renderer::Renderer;
-use hatchery::*;
+use hatchery::{
+    dpi::PhysicalPosition,
+    event::{
+        ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
+    },
+    *,
+};
 use physics::simulation::{Particle, Simulation};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use rand_distr::UnitSphere;
@@ -17,6 +23,7 @@ mod physics;
 pub struct GuiState {
     pub brightness: f32,
     pub size: f32,
+    pub active: bool,
 }
 
 impl Default for GuiState {
@@ -24,6 +31,7 @@ impl Default for GuiState {
         Self {
             brightness: 0.1,
             size: 0.01,
+            active: false,
         }
     }
 }
@@ -71,11 +79,14 @@ impl Engine for TardigradeEngine {
     fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
         let elapsed = self.elapsed.elapsed();
 
-        // self.simulation.advance(api.construction());
+        if self.state.active {
+            self.simulation.advance(api.construction());
+        }
 
         self.renderer.draw_particles(
             self.simulation.particles(),
-            self.camera.generate_view(info.viewport.dimensions[0] / info.viewport.dimensions[1]),
+            self.camera
+                .generate_view(info.viewport.dimensions[0] / info.viewport.dimensions[1]),
             self.state.brightness,
             10.0 * self.state.size,
             info,
@@ -94,6 +105,10 @@ impl Engine for TardigradeEngine {
                 ui.label("Brightness:");
                 ui.add(egui::Slider::new(&mut self.state.brightness, 0.01..=1.0))
                     .changed();
+
+                if ui.button("Run").clicked() {
+                    self.state.active = !self.state.active;
+                }
             });
     }
 
@@ -103,8 +118,8 @@ impl Engine for TardigradeEngine {
             WindowEvent::MouseInput { state, button, .. } => {
                 self.on_mouse_click_event(*state, *button)
             }
-            // WindowEvent::CursorMoved { position, .. } => self.on_cursor_moved_event(position),
-            // WindowEvent::MouseWheel { delta, .. } => self.on_mouse_wheel_event(delta),
+            WindowEvent::CursorMoved { position, .. } => self.on_cursor_moved_event(position),
+            WindowEvent::MouseWheel { delta, .. } => self.on_mouse_wheel_event(delta),
             _ => {}
         }
     }
@@ -118,14 +133,25 @@ impl TardigradeEngine {
                 VirtualKeyCode::S => self.camera.backward(),
                 VirtualKeyCode::D => self.camera.right(),
                 VirtualKeyCode::A => self.camera.left(),
+                VirtualKeyCode::Q => self.camera.up(),
+                VirtualKeyCode::E => self.camera.down(),
                 _ => (),
             }
         }
     }
 
-     fn on_mouse_click_event(&mut self, state: ElementState, button: MouseButton) {
+    fn on_mouse_click_event(&mut self, state: ElementState, button: MouseButton) {}
 
-     }
+    fn on_cursor_moved_event(&mut self, position: &PhysicalPosition<f64>) {}
+
+    fn on_mouse_wheel_event(&mut self, delta: &MouseScrollDelta) {
+        let change = match delta {
+            MouseScrollDelta::LineDelta(_x, y) => *y,
+            MouseScrollDelta::PixelDelta(pos) => pos.y as f32,
+        };
+
+        self.camera.zoom(change);
+    }
 }
 
 fn main() {
