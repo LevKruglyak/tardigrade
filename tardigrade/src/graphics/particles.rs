@@ -15,8 +15,8 @@ use vulkano::pipeline::{
     GraphicsPipeline, Pipeline,
 };
 
-use crate::physics::simulation::ParticlePosition;
 use crate::graphics::view::ViewData;
+use crate::physics::simulation::{ParticlePosition, ParticleVelocityMass};
 
 mod vs {
     vulkano_shaders::shader! {
@@ -48,7 +48,11 @@ impl ParticlesPipeline {
         let fs = fs::load(context.device()).unwrap();
 
         let pipeline = GraphicsPipeline::start()
-            .vertex_input_state(TexturedQuad::buffers_definition().instance::<ParticlePosition>())
+            .vertex_input_state(
+                TexturedQuad::buffers_definition()
+                    .instance::<ParticlePosition>()
+                    .instance::<ParticleVelocityMass>(),
+            )
             .vertex_shader(vs.entry_point("main").unwrap(), ())
             .input_assembly_state(InputAssemblyState::new())
             .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
@@ -70,6 +74,7 @@ impl ParticlesPipeline {
     pub fn draw(
         &mut self,
         particles: &DeviceBuffer<ParticlePosition>,
+        velocity_mass: &DeviceBuffer<ParticleVelocityMass>,
         view: ViewData,
         brightness: f32,
         size: f32,
@@ -87,7 +92,14 @@ impl ParticlesPipeline {
 
         builder
             .bind_pipeline_graphics(self.pipeline.clone())
-            .bind_vertex_buffers(0, (self.particle.vertex.buffer(), particles.buffer()))
+            .bind_vertex_buffers(
+                0,
+                (
+                    self.particle.vertex.buffer(),
+                    particles.buffer(),
+                    velocity_mass.buffer(),
+                ),
+            )
             .bind_index_buffer(self.particle.index.typed_buffer())
             .push_constants(self.pipeline.layout().clone(), 0, uniform)
             .set_viewport(0, vec![info.viewport.clone()])

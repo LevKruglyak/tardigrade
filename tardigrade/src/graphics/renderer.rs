@@ -3,7 +3,7 @@ use hatchery::{
     RenderInfo, Subpass,
 };
 
-use crate::physics::simulation::ParticlePosition;
+use crate::physics::simulation::{ParticlePosition, ParticleVelocityMass};
 
 use super::{particles::ParticlesPipeline, view::ViewData};
 
@@ -21,11 +21,12 @@ impl Renderer {
     pub fn draw_particles(
         &mut self,
         particles: &DeviceBuffer<ParticlePosition>,
+        velocity_mass: &DeviceBuffer<ParticleVelocityMass>,
         view: ViewData,
         brightness: f32,
         size: f32,
         info: &mut RenderInfo,
     ) {
-        self.particles_pipeline.draw(particles, view, brightness, size, info)
+        self.particles_pipeline.draw(particles, velocity_mass, view, brightness, size, info)
     }
 }

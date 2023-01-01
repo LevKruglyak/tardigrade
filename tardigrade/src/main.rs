@@ -1,9 +1,9 @@
 #![allow(unused_variables, dead_code)]
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use crate::graphics::view::Camera;
-use cgmath::Vector3;
+use cgmath::{Vector3, num_traits::Float};
 use egui_implementation::*;
 use graphics::renderer::Renderer;
 use hatchery::{
@@ -15,7 +15,7 @@ use hatchery::{
 };
 use physics::simulation::{Particle, Simulation};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use rand_distr::UnitSphere;
+use rand_distr::{UnitBall, UnitSphere, uniform::SampleUniform, Distribution, Uniform};
 
 mod graphics;
 mod physics;
@@ -41,13 +41,34 @@ pub struct TardigradeEngine {
     renderer: Renderer,
     camera: Camera,
     state: GuiState,
-    elapsed: Instant,
+    last_time: Duration,
 }
 
+pub struct UnitShell;
+
+impl<F: Float + SampleUniform> Distribution<[F; 3]> for UnitShell {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> [F; 3] {
+        let uniform = Uniform::new(F::from(-1.).unwrap(), F::from(1.).unwrap());
+        let mut x1;
+        let mut x2;
+        let mut x3;
+        loop {
+            x1 = uniform.sample(rng);
+            x2 = uniform.sample(rng);
+            x3 = uniform.sample(rng);
+            let ra = x1 * x1 + x2 * x2 + x3 * x3;
+            if ra <= F::from(1.).unwrap() && ra >= F::from(0.9).unwrap() {
+                break;
+            }
+        }
+        [x1, x2, x3]
+    }
+}
 fn create_particle(rng: &mut ThreadRng) -> Particle {
-    let position = Vector3::from(rng.sample(UnitSphere)) * 10.0;
+    let position = Vector3::from(rng.sample(UnitShell)) * 10.0;
     let velocity = Vector3::new(0.0, 0.0, 0.0);
-    let mass = 1.0;
+    let mass = 0.0000000005;
 
     Particle::new(position, velocity, mass)
 }
@@ -58,33 +79,39 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 50_000;
+        let num_particles = 400_000;
 
         let mut rng = thread_rng();
+
         let particles: Vec<Particle> = (0..num_particles)
             .map(|_| create_particle(&mut rng))
             .collect();
+
+        // particles.insert(0, Particle::new(Vector3::new(4.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0), 0.0002));
 
         let simulation = Simulation::new(context.api().construction(), particles);
 
         Self {
             simulation,
             renderer: Renderer::new(context.api().construction(), context.viewport_subpass()),
-            elapsed: Instant::now(),
+            last_time: Default::default(),
             camera: Camera::new(),
             state: Default::default(),
         }
     }
 
     fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
-        let elapsed = self.elapsed.elapsed();
-
         if self.state.active {
-            self.simulation.advance(api.construction());
+            let start = Instant::now();
+            for _ in 0..10 {
+                self.simulation.advance(api.construction());
+            }
+            self.last_time = start.elapsed();
         }
 
         self.renderer.draw_particles(
             self.simulation.particles(),
+            self.simulation.velocity_mass(),
             self.camera
                 .generate_view(info.viewport.dimensions[0] / info.viewport.dimensions[1]),
             self.state.brightness,
@@ -109,6 +136,8 @@ impl Engine for TardigradeEngine {
                 if ui.button("Run").clicked() {
                     self.state.active = !self.state.active;
                 }
+
+                ui.label(format!("last time: {} ms", self.last_time.as_millis()));
             });
     }
 

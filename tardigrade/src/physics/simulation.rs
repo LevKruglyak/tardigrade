@@ -45,10 +45,10 @@ impl_vertex!(ParticlePosition, p_pos);
 #[repr(C)]
 #[derive(Default, Pod, Zeroable, Clone, Copy)]
 pub struct ParticleVelocityMass {
-    data: [f32; 4],
+    p_vel_mass: [f32; 4],
 }
 
-impl_vertex!(ParticleVelocityMass, data);
+impl_vertex!(ParticleVelocityMass, p_vel_mass);
 
 mod cs {
     vulkano_shaders::shader! {
@@ -64,8 +64,8 @@ mod cs {
 
 pub struct Simulation {
     pipeline: Arc<ComputePipeline>,
-    positions: DeviceBuffer<ParticlePosition>,
-    velocity_masses: DeviceBuffer<ParticleVelocityMass>,
+    position_mass: DeviceBuffer<ParticlePosition>,
+    velocity: DeviceBuffer<ParticleVelocityMass>,
     num_particles: u64,
 }
 
@@ -82,7 +82,7 @@ impl Simulation {
         .unwrap();
 
         Self {
-            positions: DeviceBuffer::from_vec(
+            position_mass: DeviceBuffer::from_vec(
                 context,
                 BufferUsage {
                     storage_buffer: true,
@@ -92,20 +92,21 @@ impl Simulation {
                 particles
                     .iter()
                     .map(|p| ParticlePosition {
-                        p_pos: [p.position.x, p.position.y, p.position.z, 0.0],
+                        p_pos: [p.position.x, p.position.y, p.position.z, p.mass],
                     })
                     .collect(),
             ),
-            velocity_masses: DeviceBuffer::from_vec(
+            velocity: DeviceBuffer::from_vec(
                 context,
                 BufferUsage {
                     storage_buffer: true,
+                    vertex_buffer: true,
                     ..BufferUsage::empty()
                 },
                 particles
                     .iter()
                     .map(|p| ParticleVelocityMass {
-                        data: [p.velocity.x, p.velocity.y, p.velocity.z, p.mass],
+                        p_vel_mass: [p.velocity.x, p.velocity.y, p.velocity.z, 0.0],
                     })
                     .collect(),
             ),
@@ -127,14 +128,15 @@ impl Simulation {
             context.descriptor_allocator(),
             layout.clone(),
             [
-                WriteDescriptorSet::buffer(0, self.positions.buffer()),
-                WriteDescriptorSet::buffer(1, self.velocity_masses.buffer()),
+                WriteDescriptorSet::buffer(0, self.position_mass.buffer()),
+                WriteDescriptorSet::buffer(1, self.velocity.buffer()),
             ],
         )
         .unwrap();
 
         let data = cs::ty::SimulationData {
             buffer_size: self.num_particles as u32,
+            dust_max: self.num_particles as u32 / 100,
         };
 
         builder
@@ -161,6 +163,10 @@ impl Simulation {
     }
 
     pub fn particles(&self) -> &DeviceBuffer<ParticlePosition> {
-        &self.positions
+        &self.position_mass
+    }
+
+    pub fn velocity_mass(&self) -> &DeviceBuffer<ParticleVelocityMass> {
+        &self.velocity
     }
 }
