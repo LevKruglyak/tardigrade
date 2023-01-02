@@ -9,6 +9,7 @@ use vulkano::{
 
 pub mod buffer;
 pub mod quad;
+pub mod compute;
 
 pub struct ConstructionContext {
     memory_allocator: StandardMemoryAllocator,
