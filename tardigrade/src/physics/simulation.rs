@@ -136,7 +136,7 @@ impl Simulation {
 
         let data = cs::ty::SimulationData {
             buffer_size: self.num_particles as u32,
-            dust_max: self.num_particles as u32 / 100,
+            dust_max: self.num_particles as u32 / 500,
         };
 
         builder

@@ -1,6 +1,4 @@
 #![allow(unused_variables, dead_code)]
-#![feature(return_position_impl_trait_in_trait)]
-#![feature(associated_type_defaults)]
 
 mod gui;
 pub mod util;

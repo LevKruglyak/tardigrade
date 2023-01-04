@@ -40,5 +40,5 @@ void main() {
     gl_Position = uniforms.size * vec4(position.xy, 0.0, 0.0) + uniforms.proj * worldview * vec4(p_pos.xyz, 1.0);
     f_uv = uv;
     f_brightness = uniforms.brightness;
-    f_particle_color = hue(vec3(1.0, 0.0, 0.0), 5000000.0 * dot(p_vel_mass.xyz, p_vel_mass.xyz));
+    f_particle_color = normalize(normalize(p_vel_mass.xyz) + vec3(0.1, 0.0, 0.0));
 }

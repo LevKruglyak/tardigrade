@@ -86,9 +86,9 @@ pub trait ComputeShader {
 
     fn dispatch_size(&self) -> [u32; 3];
 
-    fn write_descriptors() -> impl IntoIterator<Item = WriteDescriptorSet>;
+    fn write_descriptors() -> Vec<WriteDescriptorSet>;
 
-    type Constants: BufferContents = ();
+    type Constants: BufferContents;
     fn push_constants(&self) -> Option<Self::Constants> {
         None
     }

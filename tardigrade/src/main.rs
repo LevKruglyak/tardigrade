@@ -66,9 +66,9 @@ impl<F: Float + SampleUniform> Distribution<[F; 3]> for UnitShell {
     }
 }
 fn create_particle(rng: &mut ThreadRng) -> Particle {
-    let position = Vector3::from(rng.sample(UnitShell)) * 20.0;
-    let velocity = Vector3::new(0.0, 0.0, 0.0);
-    let mass = 0.00000008;
+    let position = Vector3::from(rng.sample(UnitSphere)) * 10.0;
+    let velocity = Vector3::from(rng.sample(UnitBall)) * 0.001;
+    let mass = 0.0000008;
 
     Particle::new(position, velocity, mass)
 }
@@ -79,7 +79,7 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 400_000;
+        let num_particles = 2_000_000;
 
         let mut rng = thread_rng();
 
@@ -87,7 +87,7 @@ impl Engine for TardigradeEngine {
             .map(|_| create_particle(&mut rng))
             .collect();
 
-        // particles.insert(0, Particle::new(Vector3::new(4.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0), 0.0002));
+        //particles.insert(0, Particle::new(Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 8.0), 1.0));
 
         let simulation = Simulation::new(context.api().construction(), particles);
 
