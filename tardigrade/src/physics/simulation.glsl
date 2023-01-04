@@ -20,27 +20,41 @@ vec3 calculate_accel(vec3 target, vec3 position) {
     return (target - position) / pow(dist2 + 0.1, 1.5);
 }
 
+#define SHARED_DATA_SIZE 1024
+shared vec4 shared_pos_mass[SHARED_DATA_SIZE];
+
 void main() {
-    uint buffer_index = gl_GlobalInvocationID.x;
+    uint gi = gl_GlobalInvocationID.x;
+    uint li = gl_LocalInvocationID.x;
 
-    if (buffer_index < sd.buffer_size) {
-        vec3 position = position_masses.data[buffer_index].xyz;
-        float mass = position_masses.data[buffer_index].w;
+    if (gi >= sd.buffer_size) {
+        return;
+    }
+    
+    vec4 pos_mass = position_masses.data[gi];
+    vec3 vel = velocities.data[gi].xyz;
+    vec3 accel = vec3(0.0);
 
-        vec3 velocity = velocities.data[buffer_index].xyz;
-
-        vec3 accel = vec3(0.0);
-
-        for (uint i = 0; i < sd.dust_max; ++i) {
-            vec3 target_position = position_masses.data[i].xyz;
-            float target_mass = position_masses.data[i].w;
-            accel += target_mass * calculate_accel(target_position, position);
+    for (uint i = 0; i < sd.buffer_size; i += SHARED_DATA_SIZE) {
+        if (i + li < sd.buffer_size) {
+            shared_pos_mass[li] = position_masses.data[i + li];
+        } else {
+            shared_pos_mass[li] = vec4(0.0);
         }
 
-        velocity += accel;
-        position += velocity;
+        barrier();
 
-        position_masses.data[buffer_index] = vec4(position, mass);
-        velocities.data[buffer_index].xyz = velocity;
+        for (int j = 0; j < gl_WorkGroupSize.x; j++) {
+            vec4 other_pos_mass = shared_pos_mass[j];
+            accel += other_pos_mass.w * calculate_accel(other_pos_mass.xyz, pos_mass.xyz);
+        }
+
+        barrier();
     }
+
+    vel += accel;
+    pos_mass.xyz += vel;
+
+    position_masses.data[gi] = pos_mass;
+    velocities.data[gi].xyz = vel;
 }

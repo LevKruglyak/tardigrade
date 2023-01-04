@@ -80,7 +80,7 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 200_000;
+        let num_particles = 500_000;
 
         let mut rng = thread_rng();
 
