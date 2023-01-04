@@ -2,20 +2,14 @@ use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 use cgmath::Vector3;
-use hatchery::{
-    util::{
-        buffer::{AbstractBuffer, DeviceBuffer},
-        ConstructionContext,
-    },
-    AutoCommandBufferBuilder,
+use hatchery::util::{
+    buffer::{AbstractBuffer, DeviceBuffer},
+    compute::ComputeShader,
+    ConstructionContext,
 };
 use vulkano::{
-    buffer::BufferUsage,
-    command_buffer::CommandBufferUsage,
-    descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet},
-    impl_vertex,
-    pipeline::{ComputePipeline, Pipeline, PipelineBindPoint},
-    sync::{self, GpuFuture},
+    buffer::BufferUsage, descriptor_set::WriteDescriptorSet, device::Device, impl_vertex,
+    shader::ShaderModule,
 };
 
 pub struct Particle {
@@ -62,25 +56,44 @@ mod cs {
     }
 }
 
-pub struct Simulation {
-    pipeline: Arc<ComputePipeline>,
+pub struct SimulationShader {
     position_mass: DeviceBuffer<ParticlePosition>,
     velocity: DeviceBuffer<ParticleVelocityMass>,
     num_particles: u64,
 }
 
-impl Simulation {
-    pub fn new(context: &ConstructionContext, particles: Vec<Particle>) -> Self {
-        let cs = cs::load(context.device()).unwrap();
-        let pipeline = ComputePipeline::new(
-            context.device(),
-            cs.entry_point("main").unwrap(),
-            &(),
-            None,
-            |_| {},
-        )
-        .unwrap();
+impl ComputeShader for SimulationShader {
+    type Constants = cs::ty::SimulationData;
 
+    fn push_constants(&self) -> Option<Self::Constants> {
+        Some(Self::Constants {
+            buffer_size: self.num_particles as u32,
+            dust_max: self.num_particles as u32 / 500,
+        })
+    }
+
+    fn entry_point() -> &'static str {
+        "main"
+    }
+
+    fn load_module(device: Arc<Device>) -> Arc<ShaderModule> {
+        cs::load(device).unwrap()
+    }
+
+    fn dispatch_size(&self) -> [u32; 3] {
+        [self.num_particles as u32 / 64 + 1, 1, 1]
+    }
+
+    fn write_descriptors(&self) -> Vec<WriteDescriptorSet> {
+        vec![
+            WriteDescriptorSet::buffer(0, self.position_mass.buffer()),
+            WriteDescriptorSet::buffer(1, self.velocity.buffer()),
+        ]
+    }
+}
+
+impl SimulationShader {
+    pub fn new(context: &ConstructionContext, particles: Vec<Particle>) -> Self {
         Self {
             position_mass: DeviceBuffer::from_vec(
                 context,
@@ -111,55 +124,7 @@ impl Simulation {
                     .collect(),
             ),
             num_particles: particles.len() as u64,
-            pipeline,
         }
-    }
-
-    pub fn advance(&self, context: &ConstructionContext) {
-        let mut builder = AutoCommandBufferBuilder::primary(
-            context.command_allocator(),
-            context.queue().queue_family_index(),
-            CommandBufferUsage::OneTimeSubmit,
-        )
-        .unwrap();
-
-        let layout = self.pipeline.layout().set_layouts().get(0).unwrap();
-        let set = PersistentDescriptorSet::new(
-            context.descriptor_allocator(),
-            layout.clone(),
-            [
-                WriteDescriptorSet::buffer(0, self.position_mass.buffer()),
-                WriteDescriptorSet::buffer(1, self.velocity.buffer()),
-            ],
-        )
-        .unwrap();
-
-        let data = cs::ty::SimulationData {
-            buffer_size: self.num_particles as u32,
-            dust_max: self.num_particles as u32 / 500,
-        };
-
-        builder
-            .bind_pipeline_compute(self.pipeline.clone())
-            .push_constants(self.pipeline.layout().clone(), 0, data)
-            .bind_descriptor_sets(
-                PipelineBindPoint::Compute,
-                self.pipeline.layout().clone(),
-                0,
-                set,
-            )
-            .dispatch([self.num_particles as u32 / 64 + 1, 1, 1])
-            .unwrap();
-
-        let command_buffer = builder.build().unwrap();
-
-        let future = sync::now(context.device())
-            .then_execute(context.queue(), command_buffer)
-            .unwrap()
-            .then_signal_fence_and_flush()
-            .unwrap();
-
-        future.wait(None).unwrap();
     }
 
     pub fn particles(&self) -> &DeviceBuffer<ParticlePosition> {

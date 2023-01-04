@@ -3,7 +3,7 @@
 use std::time::{Duration, Instant};
 
 use crate::graphics::view::Camera;
-use cgmath::{Vector3, num_traits::Float};
+use cgmath::{num_traits::Float, Vector3};
 use egui_implementation::*;
 use graphics::renderer::Renderer;
 use hatchery::{
@@ -11,11 +11,12 @@ use hatchery::{
     event::{
         ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
     },
+    util::compute::ComputeShaderExecutor,
     *,
 };
-use physics::simulation::{Particle, Simulation};
+use physics::simulation::{Particle, SimulationShader};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
-use rand_distr::{UnitBall, UnitSphere, uniform::SampleUniform, Distribution, Uniform};
+use rand_distr::{uniform::SampleUniform, Distribution, Uniform, UnitBall, UnitSphere};
 
 mod graphics;
 mod physics;
@@ -37,7 +38,7 @@ impl Default for GuiState {
 }
 
 pub struct TardigradeEngine {
-    simulation: Simulation,
+    simulation: ComputeShaderExecutor<SimulationShader>,
     renderer: Renderer,
     camera: Camera,
     state: GuiState,
@@ -79,7 +80,7 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 2_000_000;
+        let num_particles = 200_000;
 
         let mut rng = thread_rng();
 
@@ -89,10 +90,11 @@ impl Engine for TardigradeEngine {
 
         //particles.insert(0, Particle::new(Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 8.0), 1.0));
 
-        let simulation = Simulation::new(context.api().construction(), particles);
+        let simulation = SimulationShader::new(context.api().construction(), particles);
+        let executor = ComputeShaderExecutor::new(context.api().construction(), simulation);
 
         Self {
-            simulation,
+            simulation: executor,
             renderer: Renderer::new(context.api().construction(), context.viewport_subpass()),
             last_time: Default::default(),
             camera: Camera::new(),
@@ -104,14 +106,14 @@ impl Engine for TardigradeEngine {
         if self.state.active {
             let start = Instant::now();
             // for _ in 0..10 {
-                self.simulation.advance(api.construction());
+            self.simulation.execute(api.construction());
             // }
             self.last_time = start.elapsed();
         }
 
         self.renderer.draw_particles(
-            self.simulation.particles(),
-            self.simulation.velocity_mass(),
+            self.simulation.shader().particles(),
+            self.simulation.shader().velocity_mass(),
             self.camera
                 .generate_view(info.viewport.dimensions[0] / info.viewport.dimensions[1]),
             self.state.brightness,

@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
+use systemstat::Duration;
 use vulkano::{
     buffer::BufferContents,
     command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage},
     descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet},
+    device::Device,
     pipeline::{ComputePipeline, Pipeline, PipelineBindPoint},
     shader::ShaderModule,
     sync::{self, GpuFuture},
@@ -19,7 +21,8 @@ pub struct ComputeShaderExecutor<G: ComputeShader> {
 }
 
 impl<G: ComputeShader> ComputeShaderExecutor<G> {
-    pub fn new(context: &ConstructionContext, module: Arc<ShaderModule>, shader: G) -> Self {
+    pub fn new(context: &ConstructionContext, shader: G) -> Self {
+        let module = G::load_module(context.device());
         let pipeline = ComputePipeline::new(
             context.device(),
             module.entry_point(G::entry_point()).unwrap(),
@@ -33,7 +36,7 @@ impl<G: ComputeShader> ComputeShaderExecutor<G> {
         let descriptor_set = PersistentDescriptorSet::new(
             context.descriptor_allocator(),
             layout.clone(),
-            G::write_descriptors(),
+            shader.write_descriptors(),
         )
         .unwrap();
 
@@ -77,16 +80,28 @@ impl<G: ComputeShader> ComputeShaderExecutor<G> {
             .then_signal_fence_and_flush()
             .unwrap();
 
-        future.wait(None).unwrap();
+        future
+            .wait(Some(Duration::from_secs(10)))
+            .expect("exceeded timeout");
+    }
+
+    pub fn shader(&self) -> &G {
+        &self.shader
+    }
+
+    pub fn shader_mut(&mut self) -> &mut G {
+        &mut self.shader
     }
 }
 
 pub trait ComputeShader {
+    fn load_module(device: Arc<Device>) -> Arc<ShaderModule>;
+
     fn entry_point() -> &'static str;
 
     fn dispatch_size(&self) -> [u32; 3];
 
-    fn write_descriptors() -> Vec<WriteDescriptorSet>;
+    fn write_descriptors(&self) -> Vec<WriteDescriptorSet>;
 
     type Constants: BufferContents;
     fn push_constants(&self) -> Option<Self::Constants> {
