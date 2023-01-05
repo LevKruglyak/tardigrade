@@ -1,6 +1,6 @@
 #version 450
 
-layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) buffer PositionMass {
     vec4 data[];
@@ -20,7 +20,7 @@ vec3 calculate_accel(vec3 target, vec3 position) {
     return (target - position) / pow(dist2 + 0.1, 1.5);
 }
 
-#define SHARED_DATA_SIZE 1024
+#define SHARED_DATA_SIZE 4096 
 shared vec4 shared_pos_mass[SHARED_DATA_SIZE];
 
 void main() {
@@ -35,8 +35,8 @@ void main() {
     vec3 vel = velocities.data[gi].xyz;
     vec3 accel = vec3(0.0);
 
-    for (uint i = 0; i < sd.buffer_size; i += SHARED_DATA_SIZE) {
-        if (i + li < sd.buffer_size) {
+    for (uint i = 0; i < sd.dust_max; i += SHARED_DATA_SIZE) {
+        if (i + li < sd.dust_max) {
             shared_pos_mass[li] = position_masses.data[i + li];
         } else {
             shared_pos_mass[li] = vec4(0.0);

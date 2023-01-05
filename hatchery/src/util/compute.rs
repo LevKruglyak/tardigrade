@@ -82,7 +82,7 @@ impl<G: ComputeShader> ComputeShaderExecutor<G> {
 
         future
             .wait(Some(Duration::from_secs(10)))
-            .expect("exceeded timeout");
+            .expect("exceeded timeout!");
     }
 
     pub fn shader(&self) -> &G {

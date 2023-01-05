@@ -16,7 +16,7 @@ use vulkano::pipeline::{
 };
 
 use crate::graphics::view::ViewData;
-use crate::physics::simulation::{ParticlePosition, ParticleVelocityMass};
+use crate::physics::{ParticlePosition, ParticleVelocityMass};
 
 mod vs {
     vulkano_shaders::shader! {

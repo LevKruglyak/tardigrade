@@ -3,6 +3,7 @@
 members = [
     "tardigrade",
     "hatchery",
+    "compute_testing",
 ]
 
 [workspace.dependencies]

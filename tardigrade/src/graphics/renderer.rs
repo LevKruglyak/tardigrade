@@ -3,7 +3,7 @@ use hatchery::{
     RenderInfo, Subpass,
 };
 
-use crate::physics::simulation::{ParticlePosition, ParticleVelocityMass};
+use crate::physics::{ParticlePosition, ParticleVelocityMass};
 
 use super::{particles::ParticlesPipeline, view::ViewData};
 

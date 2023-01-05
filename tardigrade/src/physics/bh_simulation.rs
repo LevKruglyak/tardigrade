@@ -1,53 +1,21 @@
 use std::sync::Arc;
 
-use bytemuck::{Pod, Zeroable};
-use cgmath::Vector3;
 use hatchery::util::{
     buffer::{AbstractBuffer, DeviceBuffer},
     compute::ComputeShader,
     ConstructionContext,
 };
 use vulkano::{
-    buffer::BufferUsage, descriptor_set::WriteDescriptorSet, device::Device, impl_vertex,
+    buffer::BufferUsage, descriptor_set::WriteDescriptorSet, device::Device,
     shader::ShaderModule,
 };
 
-pub struct Particle {
-    position: Vector3<f32>,
-    velocity: Vector3<f32>,
-    mass: f32,
-}
-
-impl Particle {
-    pub fn new(position: Vector3<f32>, velocity: Vector3<f32>, mass: f32) -> Self {
-        Self {
-            position,
-            velocity,
-            mass,
-        }
-    }
-}
-
-#[repr(C)]
-#[derive(Default, Pod, Zeroable, Clone, Copy)]
-pub struct ParticlePosition {
-    p_pos: [f32; 4],
-}
-
-impl_vertex!(ParticlePosition, p_pos);
-
-#[repr(C)]
-#[derive(Default, Pod, Zeroable, Clone, Copy)]
-pub struct ParticleVelocityMass {
-    p_vel_mass: [f32; 4],
-}
-
-impl_vertex!(ParticleVelocityMass, p_vel_mass);
+use super::{ParticleVelocityMass, ParticlePosition, Particle};
 
 mod cs {
     vulkano_shaders::shader! {
         ty: "compute",
-        path: "src/physics/simulation.glsl",
+        path: "src/physics/bh_simulation.glsl",
         types_meta: {
             use bytemuck::{Pod, Zeroable};
 
@@ -56,19 +24,19 @@ mod cs {
     }
 }
 
-pub struct SimulationShader {
+pub struct BhSimulationShader {
     position_mass: DeviceBuffer<ParticlePosition>,
     velocity: DeviceBuffer<ParticleVelocityMass>,
     num_particles: u64,
 }
 
-impl ComputeShader for SimulationShader {
+impl ComputeShader for BhSimulationShader {
     type Constants = cs::ty::SimulationData;
 
     fn push_constants(&self) -> Option<Self::Constants> {
         Some(Self::Constants {
             buffer_size: self.num_particles as u32,
-            dust_max: self.num_particles as u32 / 500,
+            dust_max: self.num_particles as u32,
         })
     }
 
@@ -81,7 +49,7 @@ impl ComputeShader for SimulationShader {
     }
 
     fn dispatch_size(&self) -> [u32; 3] {
-        [self.num_particles as u32 / 64 + 1, 1, 1]
+        [self.num_particles as u32 / 128 + 1, 1, 1]
     }
 
     fn write_descriptors(&self) -> Vec<WriteDescriptorSet> {
@@ -92,7 +60,7 @@ impl ComputeShader for SimulationShader {
     }
 }
 
-impl SimulationShader {
+impl BhSimulationShader {
     pub fn new(context: &ConstructionContext, particles: Vec<Particle>) -> Self {
         Self {
             position_mass: DeviceBuffer::from_vec(

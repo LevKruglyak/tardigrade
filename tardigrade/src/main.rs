@@ -14,7 +14,7 @@ use hatchery::{
     util::compute::ComputeShaderExecutor,
     *,
 };
-use physics::simulation::{Particle, SimulationShader};
+use physics::{Particle, standard_simulation::SimulationShader, bh_simulation::BhSimulationShader};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use rand_distr::{uniform::SampleUniform, Distribution, Uniform, UnitBall, UnitSphere};
 
@@ -38,7 +38,7 @@ impl Default for GuiState {
 }
 
 pub struct TardigradeEngine {
-    simulation: ComputeShaderExecutor<SimulationShader>,
+    simulation: ComputeShaderExecutor<BhSimulationShader>,
     renderer: Renderer,
     camera: Camera,
     state: GuiState,
@@ -80,7 +80,7 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 500_000;
+        let num_particles = 2_000_000;
 
         let mut rng = thread_rng();
 
@@ -90,7 +90,7 @@ impl Engine for TardigradeEngine {
 
         //particles.insert(0, Particle::new(Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 8.0), 1.0));
 
-        let simulation = SimulationShader::new(context.api().construction(), particles);
+        let simulation = BhSimulationShader::new(context.api().construction(), particles);
         let executor = ComputeShaderExecutor::new(context.api().construction(), simulation);
 
         Self {
@@ -107,6 +107,7 @@ impl Engine for TardigradeEngine {
             let start = Instant::now();
             // for _ in 0..10 {
             self.simulation.execute(api.construction());
+            self.state.active = !self.state.active;
             // }
             self.last_time = start.elapsed();
         }
@@ -139,7 +140,7 @@ impl Engine for TardigradeEngine {
                     self.state.active = !self.state.active;
                 }
 
-                ui.label(format!("last time: {} ms", self.last_time.as_millis()));
+                ui.label(format!("last time: {} us", self.last_time.as_micros()));
             });
     }
 
