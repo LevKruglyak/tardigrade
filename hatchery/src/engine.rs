@@ -12,7 +12,7 @@ use vulkano::{
     pipeline::graphics::viewport::Viewport,
     render_pass::Subpass,
     swapchain::Surface,
-    VulkanLibrary,
+    VulkanLibrary, Version,
 };
 use vulkano_util::{
     context::{VulkanoConfig, VulkanoContext},
@@ -214,6 +214,7 @@ where
         // Create Vulkano context
         let vulkano_config = VulkanoConfig {
             instance_create_info: InstanceCreateInfo {
+                max_api_version: Some(Version::V1_1),
                 enabled_extensions: options.instance_extensions,
                 enumerate_portability: true,
                 ..InstanceCreateInfo::default()

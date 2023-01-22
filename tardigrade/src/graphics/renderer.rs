@@ -1,5 +1,8 @@
 use hatchery::{
-    util::{buffer::DeviceBuffer, ConstructionContext},
+    util::{
+        buffer::{DeviceBuffer, SharedBuffer},
+        ConstructionContext,
+    },
     RenderInfo, Subpass,
 };
 
@@ -20,13 +23,14 @@ impl Renderer {
 
     pub fn draw_particles(
         &mut self,
-        particles: &DeviceBuffer<ParticlePosition>,
-        velocity_mass: &DeviceBuffer<ParticleVelocityMass>,
+        particles: &SharedBuffer<ParticlePosition>,
+        velocity_mass: &SharedBuffer<ParticleVelocityMass>,
         view: ViewData,
         brightness: f32,
         size: f32,
         info: &mut RenderInfo,
     ) {
-        self.particles_pipeline.draw(particles, velocity_mass, view, brightness, size, info)
+        self.particles_pipeline
+            .draw(particles, velocity_mass, view, brightness, size, info)
     }
 }

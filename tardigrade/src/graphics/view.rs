@@ -1,4 +1,4 @@
-use cgmath::{Deg, Matrix4, Point3, Vector3, SquareMatrix};
+use cgmath::{Deg, Matrix4, Point3, SquareMatrix, Vector3};
 
 pub struct ViewData {
     pub world: Matrix4<f32>,
@@ -24,7 +24,7 @@ impl Camera {
             fov: 90.0,
             near: 0.01,
             far: 100.0,
-            position: Point3::new(0.3, 0.3, 1.0),
+            position: Point3::new(0.0, 0.0, 1.0),
             direction: Vector3::new(1.0, 0.0, 0.0),
             up: Vector3::new(0.0, -1.0, 0.0),
         }

@@ -41,4 +41,5 @@ void main() {
     f_uv = uv;
     f_brightness = uniforms.brightness;
     f_particle_color = normalize(normalize(p_vel_mass.xyz) + vec3(0.1, 0.0, 0.0));
+    f_particle_color = vec3(1.0);
 }

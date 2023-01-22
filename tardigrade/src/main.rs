@@ -1,20 +1,24 @@
 #![allow(unused_variables, dead_code)]
 
-use std::time::{Duration, Instant};
+use std::{
+    f32::consts::{self, PI, TAU},
+    time::{Duration, Instant},
+};
 
 use crate::graphics::view::Camera;
-use cgmath::{num_traits::Float, Vector3};
+use cgmath::{num_traits::Float, Vector3, Zero};
 use egui_implementation::*;
 use graphics::renderer::Renderer;
 use hatchery::{
     dpi::PhysicalPosition,
+    egui_implementation::egui::plot::{Line, Plot, PlotPoints},
     event::{
         ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
     },
     util::compute::ComputeShaderExecutor,
     *,
 };
-use physics::{Particle, standard_simulation::SimulationShader, bh_simulation::BhSimulationShader};
+use physics::{bh_simulation::BhSimulationShader, standard_simulation::SimulationShader, Particle};
 use rand::{rngs::ThreadRng, thread_rng, Rng};
 use rand_distr::{uniform::SampleUniform, Distribution, Uniform, UnitBall, UnitSphere};
 
@@ -38,40 +42,70 @@ impl Default for GuiState {
 }
 
 pub struct TardigradeEngine {
-    simulation: ComputeShaderExecutor<BhSimulationShader>,
+    simulation: ComputeShaderExecutor<SimulationShader>,
     renderer: Renderer,
     camera: Camera,
     state: GuiState,
     last_time: Duration,
 }
 
-pub struct UnitShell;
+pub struct DiskGalaxy;
 
-impl<F: Float + SampleUniform> Distribution<[F; 3]> for UnitShell {
-    #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> [F; 3] {
-        let uniform = Uniform::new(F::from(-1.).unwrap(), F::from(1.).unwrap());
-        let mut x1;
-        let mut x2;
-        let mut x3;
-        loop {
-            x1 = uniform.sample(rng);
-            x2 = uniform.sample(rng);
-            x3 = uniform.sample(rng);
-            let ra = x1 * x1 + x2 * x2 + x3 * x3;
-            if ra <= F::from(1.).unwrap() && ra >= F::from(0.9).unwrap() {
-                break;
-            }
-        }
-        [x1, x2, x3]
+impl DiskGalaxy {
+    fn black_hole() -> Particle {
+        Particle::new(Vector3::zero(), Vector3::zero(), 0.1)
     }
 }
-fn create_particle(rng: &mut ThreadRng) -> Particle {
-    let position = Vector3::from(rng.sample(UnitSphere)) * 10.0;
-    let velocity = Vector3::from(rng.sample(UnitBall)) * 0.001;
-    let mass = 0.0000008;
 
-    Particle::new(position, velocity, mass)
+impl Distribution<Particle> for DiskGalaxy {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Particle {
+        let a = 1.0;
+
+        let theta = rng.gen_range(0.0..TAU);
+        let r = rng.gen_range(1.5..12.0);
+
+        let mass = 0.0001;
+        let position = Vector3::new(0.0, r * theta.cos(), r * theta.sin());
+
+        let rotation = -1.0;
+        // let v = (0.1 / r).sqrt();
+        let v = 0.0 * (0.1 / r).sqrt();
+        let velocity = Vector3::new(0.0, rotation * v * theta.sin(), -rotation * v * theta.cos());
+
+        Particle::new(position, velocity, mass)
+    }
+}
+
+pub struct PlummerDistribution;
+
+impl Distribution<Particle> for PlummerDistribution {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Particle {
+        let a = 1.0;
+
+        let phi = rng.gen_range(0.0..TAU);
+        let theta = rng.gen_range(-1.0..1.0).acos();
+        let r = a / (rng.gen_range(0.0..1.0).powf(-0.666666) - 1.0).sqrt();
+
+        let position = Vector3::new(0.0, r * phi.cos(), r * phi.sin());
+
+        let mut s = 0.0;
+        let mut t = 0.1;
+        while t > s * s * (1.0 - s * s).powf(3.5) {
+            s = rng.gen_range(0.0..1.0);
+            t = rng.gen_range(0.0..0.1);
+        }
+
+        let v = 100.0 * s * 2.0.sqrt() * (1.0 + r * r).powf(-0.25);
+        let phi = rng.gen_range(0.0..TAU);
+        let theta = rng.gen_range(-1.0..1.0).acos();
+
+        let velocity = 0.0001 * Vector3::new(0.0, v * phi.cos(), v * phi.sin());
+        let mass = 0.0001;
+
+        Particle::new(position, velocity, mass)
+    }
 }
 
 impl Engine for TardigradeEngine {
@@ -80,17 +114,15 @@ impl Engine for TardigradeEngine {
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 2_000_000;
+        let num_particles = 20_000;
 
         let mut rng = thread_rng();
 
-        let particles: Vec<Particle> = (0..num_particles)
-            .map(|_| create_particle(&mut rng))
-            .collect();
+        let mut particles: Vec<Particle> =
+            (0..num_particles).map(|_| rng.sample(DiskGalaxy)).collect();
+        // particles.insert(0, DiskGalaxy::black_hole());
 
-        //particles.insert(0, Particle::new(Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 8.0), 1.0));
-
-        let simulation = BhSimulationShader::new(context.api().construction(), particles);
+        let simulation = SimulationShader::new(context.api().construction(), particles);
         let executor = ComputeShaderExecutor::new(context.api().construction(), simulation);
 
         Self {
@@ -105,10 +137,10 @@ impl Engine for TardigradeEngine {
     fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
         if self.state.active {
             let start = Instant::now();
-            // for _ in 0..10 {
-            self.simulation.execute(api.construction());
-            self.state.active = !self.state.active;
-            // }
+            for _ in 0..10 {
+                self.simulation.execute(api.construction());
+            }
+            self.simulation.shader_mut().calculate_energy();
             self.last_time = start.elapsed();
         }
 
@@ -141,6 +173,51 @@ impl Engine for TardigradeEngine {
                 }
 
                 ui.label(format!("last time: {} us", self.last_time.as_micros()));
+
+                let kinetic: PlotPoints = self
+                    .simulation
+                    .shader()
+                    .kinetic_energy
+                    .iter()
+                    .enumerate()
+                    .map(|(i, x)| [i as f64, *x as f64])
+                    .collect();
+                let potential: PlotPoints = self
+                    .simulation
+                    .shader()
+                    .potential_energy
+                    .iter()
+                    .enumerate()
+                    .map(|(i, x)| [i as f64, *x as f64])
+                    .collect();
+                let total: PlotPoints = self
+                    .simulation
+                    .shader()
+                    .potential_energy
+                    .iter()
+                    .zip(self.simulation.shader().kinetic_energy.iter())
+                    .map(|(x, y)| x + y)
+                    .enumerate()
+                    .map(|(i, x)| [i as f64, x as f64])
+                    .collect();
+                let line = Line::new(kinetic);
+                let line2 = Line::new(potential);
+                let line3 = Line::new(total);
+                Plot::new(format!("{}", thread_rng().gen_range(0.0..1.0)))
+                    .view_aspect(2.0)
+                    .show(ui, |plot_ui| {
+                        plot_ui.line(line);
+                    });
+                Plot::new(format!("{}", thread_rng().gen_range(0.0..1.0)))
+                    .view_aspect(2.0)
+                    .show(ui, |plot_ui| {
+                        plot_ui.line(line2);
+                    });
+                Plot::new(format!("{}", thread_rng().gen_range(0.0..1.0)))
+                    .view_aspect(2.0)
+                    .show(ui, |plot_ui| {
+                        plot_ui.line(line3);
+                    });
             });
     }
 

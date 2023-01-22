@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hatchery::{
     util::{
-        buffer::{AbstractBuffer, DeviceBuffer},
+        buffer::{AbstractBuffer, DeviceBuffer, SharedBuffer},
         quad::TexturedQuad,
         ConstructionContext,
     },
@@ -73,8 +73,8 @@ impl ParticlesPipeline {
 
     pub fn draw(
         &mut self,
-        particles: &DeviceBuffer<ParticlePosition>,
-        velocity_mass: &DeviceBuffer<ParticleVelocityMass>,
+        particles: &SharedBuffer<ParticlePosition>,
+        velocity_mass: &SharedBuffer<ParticleVelocityMass>,
         view: ViewData,
         brightness: f32,
         size: f32,

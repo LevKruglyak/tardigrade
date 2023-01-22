@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use hatchery::util::{
-    buffer::{AbstractBuffer, DeviceBuffer, SharedBuffer},
+    buffer::{AbstractBuffer, SharedBuffer, DeviceBuffer},
     compute::ComputeShader,
     ConstructionContext,
 };
 use vulkano::{
-    buffer::BufferUsage, descriptor_set::WriteDescriptorSet, device::Device,
-    shader::ShaderModule,
+    buffer::BufferUsage, descriptor_set::WriteDescriptorSet, device::Device, shader::ShaderModule,
 };
+
+use self::cs::ty::Constants;
 
 mod cs {
     vulkano_shaders::shader! {
@@ -23,15 +24,17 @@ mod cs {
 }
 
 pub struct MinShader {
-    data: SharedBuffer<f32>,
+    data: DeviceBuffer<f32>,
     out: SharedBuffer<f32>,
 }
 
 impl ComputeShader for MinShader {
-    type Constants = ();
+    type Constants = cs::ty::Constants;
 
     fn push_constants(&self) -> Option<Self::Constants> {
-        None
+        Some(Constants {
+            buffer_size: self.data.len(),
+        })
     }
 
     fn entry_point() -> &'static str {
@@ -43,56 +46,40 @@ impl ComputeShader for MinShader {
     }
 
     fn dispatch_size(&self) -> [u32; 3] {
-        [self.data.len() as u32 / 128 + 1, 1, 1]
+        [1, 1, 1]
     }
 
     fn write_descriptors(&self) -> Vec<WriteDescriptorSet> {
         vec![
             WriteDescriptorSet::buffer(0, self.data.buffer()),
+            WriteDescriptorSet::buffer(1, self.out.buffer()),
         ]
     }
 }
 
 impl MinShader {
-    pub fn new(context: &ConstructionContext, particles: Vec<Particle>) -> Self {
+    pub fn new(context: &ConstructionContext, points: Vec<f32>) -> Self {
         Self {
-            position_mass: DeviceBuffer::from_vec(
+            data: DeviceBuffer::from_vec(
                 context,
                 BufferUsage {
                     storage_buffer: true,
-                    vertex_buffer: true,
                     ..BufferUsage::empty()
                 },
-                particles
-                    .iter()
-                    .map(|p| ParticlePosition {
-                        p_pos: [p.position.x, p.position.y, p.position.z, p.mass],
-                    })
-                    .collect(),
+                points,
             ),
-            velocity: DeviceBuffer::from_vec(
+            out: SharedBuffer::new(
                 context,
                 BufferUsage {
                     storage_buffer: true,
-                    vertex_buffer: true,
                     ..BufferUsage::empty()
                 },
-                particles
-                    .iter()
-                    .map(|p| ParticleVelocityMass {
-                        p_vel_mass: [p.velocity.x, p.velocity.y, p.velocity.z, 0.0],
-                    })
-                    .collect(),
+                1,
             ),
-            num_particles: particles.len() as u64,
         }
     }
 
-    pub fn particles(&self) -> &DeviceBuffer<ParticlePosition> {
-        &self.position_mass
-    }
-
-    pub fn velocity_mass(&self) -> &DeviceBuffer<ParticleVelocityMass> {
-        &self.velocity
+    pub fn min(&self) -> f32 {
+        self.out.typed_buffer().read().unwrap()[0]
     }
 }
