@@ -1,4 +1,4 @@
-# tardigrade
+# tardigrade [WIP until I get better at Rust/GPU]
 
 Simple GPU accelerated N-body simulator.
 
