@@ -29,7 +29,7 @@ pub trait AbstractBuffer<T: BufferData> {
 
     fn buffer(&self) -> Arc<dyn BufferAccess>;
 
-    fn typed_buffer(&self) -> Arc<Self::Buffer>; 
+    fn typed_buffer(&self) -> Arc<Self::Buffer>;
 
     fn copy<B: AbstractBuffer<T>>(&self, context: &ConstructionContext, src: &B) {
         let mut cb_builder = AutoCommandBufferBuilder::primary(

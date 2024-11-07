@@ -1,5 +1,6 @@
 #![allow(unused_variables, dead_code)]
 
+use cgmath::Vector3;
 use egui_implementation::*;
 use hatchery::{
     dpi::PhysicalPosition,
@@ -9,7 +10,8 @@ use hatchery::{
     util::compute::ComputeShaderExecutor,
     *,
 };
-use util::{camera::Camera, point_cloud::PointCloudPipeline};
+use physics::{verlet::Simulation, Particle};
+use util::{buffer::AbstractBuffer, camera::Camera, point_cloud::PointCloudPipeline};
 
 mod physics;
 
@@ -22,35 +24,52 @@ impl Default for GuiState {
 }
 
 pub struct TardigradeEngine {
-    // simulation: ComputeShaderExecutor<SimulationShader>,
+    simulation: ComputeShaderExecutor<Simulation>,
     render: PointCloudPipeline,
     camera: Camera,
     state: GuiState,
-    // last_time: Duration,
 }
 
 impl Engine for TardigradeEngine {
     type Gui = EguiImplementation;
 
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
-        // let num_particles = 100_000;
-        //
-        // let mut rng = thread_rng();
-        //
-        // let mut particles: Vec<Particle> =
-        //     (0..num_particles).map(|_| rng.sample(BallOfGas)).collect();
-        // // particles.insert(0, DiskGalaxy::black_hole());
-        //
-        // let simulation = SimulationShader::new(context.api().construction(), particles);
-        // let executor = ComputeShaderExecutor::new(context.api().construction(), simulation);
+        let mut particles: Vec<Particle> = Vec::new();
+        particles.push(Particle::new(
+            Vector3::new(10.0, 0.0, 0.0),
+            Vector3::new(0.0, 0.0, 0.0),
+            1.0,
+        ));
+        particles.push(Particle::new(
+            Vector3::new(0.0, 10.0, 0.0),
+            Vector3::new(0.0, 0.0, 0.0),
+            1.0,
+        ));
+        particles.push(Particle::new(
+            Vector3::new(0.0, 0.0, 10.0),
+            Vector3::new(0.0, 0.0, 0.0),
+            1.0,
+        ));
+        particles.push(Particle::new(
+            Vector3::new(10.0, 10.0, 0.0),
+            Vector3::new(0.0, 0.0, 0.0),
+            1.0,
+        ));
+        particles.push(Particle::new(
+            Vector3::new(10.0, 0.0, 10.0),
+            Vector3::new(0.0, 0.0, 0.0),
+            1.0,
+        ));
+
+        let simulation = Simulation::new(context.api().construction(), particles);
+        let executor = ComputeShaderExecutor::new(context.api().construction(), simulation);
 
         Self {
-            // simulation: executor,
+            simulation: executor,
             render: PointCloudPipeline::new(
                 context.api().construction(),
                 context.viewport_subpass(),
             ),
-            // last_time: Default::default(),
             camera: Camera::new(),
             state: Default::default(),
         }
@@ -65,8 +84,15 @@ impl Engine for TardigradeEngine {
         //     self.simulation.shader_mut().calculate_energy();
         //     self.last_time = start.elapsed();
         // }
-        //
-        // self.render.draw(points, view, brightness, size, info)
+
+        self.render.draw(
+            self.simulation.shader().particles(),
+            self.camera
+                .generate_view(info.viewport.dimensions[0] / info.viewport.dimensions[1]),
+            1.0,
+            2.0,
+            info,
+        )
         // self.renderer.draw_particles(
         //     self.simulation.shader().particles(),
         //     self.simulation.shader().velocity_mass(),
