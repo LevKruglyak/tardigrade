@@ -855,6 +855,7 @@ name = "hatchery"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "cgmath",
  "egui",
  "egui_winit_vulkano",
  "lazy_static",

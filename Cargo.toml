@@ -13,6 +13,7 @@ vulkano = "0.32"
 vulkano-util = "0.32"
 vulkano-win = "0.32"
 vulkano-shaders = "0.32"
+cgmath = "0.18.0"
 
 [profile.release]
 # lto = "fat"

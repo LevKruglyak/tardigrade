@@ -9,8 +9,7 @@ hatchery = { path = "../hatchery", features = ["egui"] }
 rand = "0.8.5"
 rand_distr = "0.4.3"
 
-cgmath = "0.18.0"
-
+cgmath = { workspace = true }
 bytemuck = { workspace = true }
 vulkano = { workspace = true }
 vulkano-util = { workspace = true }

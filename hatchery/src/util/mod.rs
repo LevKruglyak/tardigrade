@@ -8,8 +8,10 @@ use vulkano::{
 };
 
 pub mod buffer;
-pub mod quad;
+pub mod camera;
 pub mod compute;
+pub mod point_cloud;
+pub mod quad;
 
 pub struct ConstructionContext {
     memory_allocator: StandardMemoryAllocator,

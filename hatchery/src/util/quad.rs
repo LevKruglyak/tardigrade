@@ -11,11 +11,11 @@ use super::{
 #[repr(C)]
 #[derive(Default, Pod, Zeroable, Clone, Copy)]
 pub struct QuadVertex {
-    position: [f32; 2],
-    uv: [f32; 2],
+    quad_pos: [f32; 2],
+    quad_uv: [f32; 2],
 }
 
-impl_vertex!(QuadVertex, position, uv);
+impl_vertex!(QuadVertex, quad_pos, quad_uv);
 
 pub struct TexturedQuad {
     pub vertex: SharedBuffer<QuadVertex>,
@@ -32,20 +32,20 @@ impl TexturedQuad {
             },
             vec![
                 QuadVertex {
-                    position: [min[0], min[1]],
-                    uv: [0.0, 0.0],
+                    quad_pos: [min[0], min[1]],
+                    quad_uv: [0.0, 0.0],
                 },
                 QuadVertex {
-                    position: [min[0], max[1]],
-                    uv: [0.0, 1.0],
+                    quad_pos: [min[0], max[1]],
+                    quad_uv: [0.0, 1.0],
                 },
                 QuadVertex {
-                    position: [max[0], max[1]],
-                    uv: [1.0, 1.0],
+                    quad_pos: [max[0], max[1]],
+                    quad_uv: [1.0, 1.0],
                 },
                 QuadVertex {
-                    position: [max[0], min[1]],
-                    uv: [1.0, 0.0],
+                    quad_pos: [max[0], min[1]],
+                    quad_uv: [1.0, 0.0],
                 },
             ],
         );

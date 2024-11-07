@@ -1,21 +1,17 @@
 #![allow(unused_variables, dead_code)]
 
-use std::{
-    f32::consts::{self, PI, TAU},
-    time::{Duration, Instant},
-};
-
-use cgmath::{num_traits::Float, Vector3, Zero};
 use egui_implementation::*;
 use hatchery::{
     dpi::PhysicalPosition,
-    egui_implementation::egui::plot::{Line, Plot, PlotPoints},
     event::{
         ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
     },
     util::compute::ComputeShaderExecutor,
     *,
 };
+use util::{camera::Camera, point_cloud::PointCloudPipeline};
+
+mod physics;
 
 pub struct GuiState {}
 
@@ -27,8 +23,8 @@ impl Default for GuiState {
 
 pub struct TardigradeEngine {
     // simulation: ComputeShaderExecutor<SimulationShader>,
-    // renderer: Renderer,
-    // camera: Camera,
+    render: PointCloudPipeline,
+    camera: Camera,
     state: GuiState,
     // last_time: Duration,
 }
@@ -37,8 +33,6 @@ impl Engine for TardigradeEngine {
     type Gui = EguiImplementation;
 
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
-        println!("using {}", context.api().device_name());
-
         // let num_particles = 100_000;
         //
         // let mut rng = thread_rng();
@@ -52,9 +46,12 @@ impl Engine for TardigradeEngine {
 
         Self {
             // simulation: executor,
-            // renderer: Renderer::new(context.api().construction(), context.viewport_subpass()),
+            render: PointCloudPipeline::new(
+                context.api().construction(),
+                context.viewport_subpass(),
+            ),
             // last_time: Default::default(),
-            // camera: Camera::new(),
+            camera: Camera::new(),
             state: Default::default(),
         }
     }
@@ -69,6 +66,7 @@ impl Engine for TardigradeEngine {
         //     self.last_time = start.elapsed();
         // }
         //
+        // self.render.draw(points, view, brightness, size, info)
         // self.renderer.draw_particles(
         //     self.simulation.shader().particles(),
         //     self.simulation.shader().velocity_mass(),
@@ -82,9 +80,12 @@ impl Engine for TardigradeEngine {
 
     fn immediate(&mut self, context: &mut egui::Context, api: &mut EngineApi) {
         egui::SidePanel::left("left_panel")
-            .min_width(400.0)
+            .min_width(250.0)
             .resizable(false)
-            .show(context, |ui| {});
+            .show(context, |ui| {
+                ui.heading("Newtonian Gravity Simulator");
+                ui.label(format!("Using: {}", api.device_name()));
+            });
     }
 
     fn on_winit_event(&mut self, event: &WindowEvent, api: &mut EngineApi) {
@@ -104,12 +105,12 @@ impl TardigradeEngine {
     fn on_keyboard_event(&mut self, input: &KeyboardInput) {
         if let Some(key_code) = input.virtual_keycode {
             match key_code {
-                // VirtualKeyCode::W => self.camera.forward(),
-                // VirtualKeyCode::S => self.camera.backward(),
-                // VirtualKeyCode::D => self.camera.right(),
-                // VirtualKeyCode::A => self.camera.left(),
-                // VirtualKeyCode::Q => self.camera.up(),
-                // VirtualKeyCode::E => self.camera.down(),
+                VirtualKeyCode::W => self.camera.forward(),
+                VirtualKeyCode::S => self.camera.backward(),
+                VirtualKeyCode::D => self.camera.right(),
+                VirtualKeyCode::A => self.camera.left(),
+                VirtualKeyCode::Q => self.camera.up(),
+                VirtualKeyCode::E => self.camera.down(),
                 _ => (),
             }
         }
@@ -125,7 +126,7 @@ impl TardigradeEngine {
             MouseScrollDelta::PixelDelta(pos) => pos.y as f32,
         };
 
-        // self.camera.zoom(change);
+        self.camera.zoom(change);
     }
 }
 

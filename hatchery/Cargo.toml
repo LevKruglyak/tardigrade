@@ -9,7 +9,7 @@ description = "Simple wrapper engine library for making graphical Vulkano apps w
 # Gui
 egui = { version = "0.19", optional = true }
 egui_winit_vulkano = { version = "0.21", optional = true }
-
+cgmath = { workspace = true }
 winit = "0.27.5"
 
 # Vulkano dependencies
