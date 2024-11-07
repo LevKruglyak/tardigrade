@@ -13,11 +13,11 @@ egui_winit_vulkano = { version = "0.21", optional = true }
 winit = "0.27.5"
 
 # Vulkano dependencies
-bytemuck = { version = "1.7", features = ["derive", "extern_crate_std", "min_const_generics"], workspace = true }
-vulkano = { version = "0.32", workspace = true }
-vulkano-util = { version = "0.32", workspace = true }
-vulkano-win = { version = "0.32", workspace = true }
-vulkano-shaders = { version = "0.32", workspace = true }
+bytemuck = { workspace = true }
+vulkano = { workspace = true }
+vulkano-util = { workspace = true }
+vulkano-win = { workspace = true }
+vulkano-shaders = { workspace = true }
 
 # Utils
 systemstat = "0.1.11"

@@ -108,18 +108,31 @@ impl Distribution<Particle> for PlummerDistribution {
     }
 }
 
+pub struct BallOfGas;
+
+impl Distribution<Particle> for BallOfGas {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Particle {
+        let position = Vector3::from(rng.sample(UnitBall)) * 10.0;
+        let velocity = Vector3::new(0.0, 0.0, 0.0);
+        let mass = 0.0001;
+
+        Particle::new(position, velocity, mass)
+    }
+}
+
 impl Engine for TardigradeEngine {
     type Gui = EguiImplementation;
 
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         println!("using {}", context.api().device_name());
 
-        let num_particles = 20_000;
+        let num_particles = 100_000;
 
         let mut rng = thread_rng();
 
         let mut particles: Vec<Particle> =
-            (0..num_particles).map(|_| rng.sample(DiskGalaxy)).collect();
+            (0..num_particles).map(|_| rng.sample(BallOfGas)).collect();
         // particles.insert(0, DiskGalaxy::black_hole());
 
         let simulation = SimulationShader::new(context.api().construction(), particles);

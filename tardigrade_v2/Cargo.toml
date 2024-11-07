@@ -1,5 +1,5 @@
 [package]
-name = "compute_testing"
+name = "tardigrade_v2"
 version = "0.1.0"
 edition = "2021"
 authors = ["Lev Kruglyak <lev.kruglyak2014@gmail.com>"]
@@ -13,6 +13,6 @@ cgmath = "0.18.0"
 
 bytemuck = { workspace = true }
 vulkano = { workspace = true }
-vulkano-util = {  workspace = true }
-vulkano-win = {  workspace = true }
-vulkano-shaders = {  workspace = true }
+vulkano-util = { workspace = true }
+vulkano-win = { workspace = true }
+vulkano-shaders = { workspace = true }

@@ -1,0 +1,28 @@
+\documentclass{article}
+
+\usepackage[T1]{fontenc}
+\RequirePackage{mlmodern}
+
+\usepackage{amsmath, amsfonts, mathtools, amsthm, amssymb} % Standard ams libraries
+\usepackage{mathrsfs} % Fancy script capitals
+\usepackage{bm} % Bold math
+
+\providecommand{\xx}{\mathbf{x}}
+\providecommand{\vv}{\mathbf{v}}
+\renewcommand{\aa}{\mathbf{a}}
+
+\begin{document}
+\section{Integrators}
+\subsection{Velocity Verlet Algorithm}
+
+The velocity Verlet algorithm has iteration steps:
+\[
+  \begin{aligned}
+    \xx(t+\Delta t) &= \xx(t) + \vv(t)\Delta t + \frac{1}{2}\aa(t)\Delta t^2\\
+    \vv(t+\Delta t) &= \vv(t) + \frac{1}{2}(\aa(t) + \aa(t+\Delta t))\Delta t 
+  \end{aligned}
+\]
+  
+\subsection{Runge-Kutta Method}
+
+\end{document}

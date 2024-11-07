@@ -26,7 +26,7 @@ vec3 calculate_accel(vec3 target, vec3 position) {
     return (target - position) / pow(dist2 + SOFTENING, 1.5);
 }
 
-#define SHARED_DATA_SIZE 4096 
+#define SHARED_DATA_SIZE 1024 
 shared vec4 shared_pos_mass[SHARED_DATA_SIZE];
 
 void main() {
