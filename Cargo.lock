@@ -1244,6 +1244,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "newtonian_nbody"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "cgmath",
+ "hatchery",
+ "rand",
+ "rand_distr",
+ "vulkano",
+ "vulkano-shaders",
+ "vulkano-util",
+ "vulkano-win",
+]
+
+[[package]]
 name = "nix"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1804,6 +1819,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "sph2d"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "cgmath",
+ "hatchery",
+ "rand",
+ "rand_distr",
+ "vulkano",
+ "vulkano-shaders",
+ "vulkano-util",
+ "vulkano-win",
+]
+
+[[package]]
 name = "spin"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1851,21 +1881,6 @@ dependencies = [
 
 [[package]]
 name = "tardigrade"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "cgmath",
- "hatchery",
- "rand",
- "rand_distr",
- "vulkano",
- "vulkano-shaders",
- "vulkano-util",
- "vulkano-win",
-]
-
-[[package]]
-name = "tardigrade_v2"
 version = "0.1.0"
 dependencies = [
  "bytemuck",

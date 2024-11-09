@@ -9,6 +9,9 @@ use winit::{event::WindowEvent, event_loop::EventLoopWindowTarget};
 #[cfg(feature = "egui")]
 pub mod egui;
 
+#[cfg(feature = "egui")]
+pub mod egui_fat_button;
+
 // An abstraction layer over the gui library to allow for easier switching between two libraries
 
 /// Represents an arbitrary immediate mode gui implementation such as imgui-rs or egui

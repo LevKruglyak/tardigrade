@@ -12,8 +12,8 @@ pub use engine::EngineApi;
 pub use engine::EngineContext;
 pub use engine::EngineLauncher;
 pub use engine::EngineOptions;
-pub use engine::WindowOptions;
 pub use engine::RenderInfo;
+pub use engine::WindowOptions;
 pub use gui::GuiImplementation;
 
 // pub extern crate vulkano;
@@ -22,11 +22,11 @@ pub use gui::GuiImplementation;
 // pub extern crate bytemuck;
 
 pub use vulkano::command_buffer::PrimaryAutoCommandBuffer;
+pub use vulkano::device::Features;
 pub use vulkano::render_pass::Subpass;
 pub use vulkano::{
     command_buffer::AutoCommandBufferBuilder, pipeline::graphics::viewport::Viewport,
 };
-pub use vulkano::device::Features;
 pub use winit::dpi::LogicalSize;
 pub use winit::*;
 
@@ -35,3 +35,6 @@ pub mod egui_implementation {
     pub use crate::gui::egui::EguiImplementation;
     pub use egui;
 }
+
+#[cfg(feature = "egui")]
+pub use crate::gui::egui_fat_button;

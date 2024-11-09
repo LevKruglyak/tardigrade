@@ -2,9 +2,9 @@
 resolver = "2"
 members = [
     "tardigrade",
-    "tardigrade_v2",
+    "newtonian_nbody",
     "hatchery",
-    "compute_testing",
+    "compute_testing", "sph2d",
 ]
 
 [workspace.dependencies]

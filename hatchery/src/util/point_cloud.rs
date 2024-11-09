@@ -47,7 +47,7 @@ mod fs {
 #[repr(C)]
 #[derive(Default, Pod, Zeroable, Clone, Copy)]
 pub struct RenderPoint {
-    pub point_pos: [f32; 3],
+    pub point_pos: [f32; 4],
 }
 
 impl_vertex!(RenderPoint, point_pos);
