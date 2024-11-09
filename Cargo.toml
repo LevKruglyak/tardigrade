@@ -4,7 +4,7 @@ members = [
     "tardigrade",
     "newtonian_nbody",
     "hatchery",
-    "compute_testing", "sph2d",
+     "sph2d",
 ]
 
 [workspace.dependencies]

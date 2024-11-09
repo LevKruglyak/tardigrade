@@ -1,7 +1,7 @@
 #![allow(unused_variables, dead_code)]
 
 use std::{
-    f32::consts::{self, PI, TAU},
+    f32::consts::{TAU},
     time::{Duration, Instant},
 };
 
@@ -18,9 +18,9 @@ use hatchery::{
     util::compute::ComputeShaderExecutor,
     *,
 };
-use physics::{bh_simulation::BhSimulationShader, standard_simulation::SimulationShader, Particle};
-use rand::{rngs::ThreadRng, thread_rng, Rng};
-use rand_distr::{uniform::SampleUniform, Distribution, Uniform, UnitBall, UnitSphere};
+use physics::{standard_simulation::SimulationShader, Particle};
+use rand::{thread_rng, Rng};
+use rand_distr::{Distribution, UnitBall};
 
 mod graphics;
 mod physics;
@@ -131,7 +131,7 @@ impl Engine for TardigradeEngine {
 
         let mut rng = thread_rng();
 
-        let mut particles: Vec<Particle> =
+        let particles: Vec<Particle> =
             (0..num_particles).map(|_| rng.sample(BallOfGas)).collect();
         // particles.insert(0, DiskGalaxy::black_hole());
 

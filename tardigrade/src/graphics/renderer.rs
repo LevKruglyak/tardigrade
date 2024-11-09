@@ -1,6 +1,6 @@
 use hatchery::{
     util::{
-        buffer::{DeviceBuffer, SharedBuffer},
+        buffer::SharedBuffer,
         ConstructionContext,
     },
     RenderInfo, Subpass,

@@ -306,21 +306,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "compute_testing"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "cgmath",
- "hatchery",
- "rand",
- "rand_distr",
- "vulkano",
- "vulkano-shaders",
- "vulkano-util",
- "vulkano-win",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

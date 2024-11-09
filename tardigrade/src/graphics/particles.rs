@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use hatchery::{
     util::{
-        buffer::{AbstractBuffer, DeviceBuffer, SharedBuffer},
+        buffer::{AbstractBuffer, SharedBuffer},
         quad::TexturedQuad,
         ConstructionContext,
     },
