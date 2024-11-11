@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "tardigrade",
     "newtonian_nbody",
     "hatchery",
-     "sph2d",
+    # "sph2d",
+    # "tardigrade",
 ]
 
 [workspace.dependencies]

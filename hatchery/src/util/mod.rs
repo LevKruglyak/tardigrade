@@ -10,8 +10,60 @@ use vulkano::{
 pub mod buffer;
 pub mod camera;
 pub mod compute;
+pub mod mesh;
 pub mod point_cloud;
 pub mod quad;
+
+#[macro_export]
+macro_rules! compute {
+    ($path:expr, $module:ident) => {
+        mod $module {
+            vulkano_shaders::shader! {
+                ty: "compute",
+                path: $path,
+                types_meta: {
+                    use bytemuck::{Pod, Zeroable};
+
+                    #[derive(Clone, Copy, Zeroable, Pod)]
+                },
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! vertex {
+    ($path:expr, $module:ident) => {
+        mod $module {
+            vulkano_shaders::shader! {
+                ty: "vertex",
+                path: $path,
+                types_meta: {
+                    use bytemuck::{Pod, Zeroable};
+
+                    #[derive(Clone, Copy, Zeroable, Pod)]
+                },
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! fragment {
+    ($path:expr, $module:ident) => {
+        mod $module {
+            vulkano_shaders::shader! {
+                ty: "fragment",
+                path: $path,
+                types_meta: {
+                    use bytemuck::{Pod, Zeroable};
+
+                    #[derive(Clone, Copy, Zeroable, Pod)]
+                },
+            }
+        }
+    };
+}
 
 pub struct ConstructionContext {
     memory_allocator: StandardMemoryAllocator,

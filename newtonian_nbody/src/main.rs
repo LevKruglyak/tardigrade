@@ -2,14 +2,14 @@
 
 use std::{f32::consts::TAU, sync::Arc};
 
-use cgmath::{InnerSpace, Point3, Vector3};
+use cgmath::{num_traits::Pow, InnerSpace, Point3, Vector3, Zero};
 use distributions::{BallOfGas, Galaxy, Plummer};
 use egui::{
     plot::{HLine, Line, Plot, PlotPoints},
     Color32, DragValue, Grid, Window,
 };
-use egui_fat_button::FatButton;
 use egui_implementation::*;
+use egui_widgets::*;
 use hatchery::{
     dpi::PhysicalPosition,
     event::{
@@ -18,6 +18,7 @@ use hatchery::{
     util::compute::ComputeShaderExecutor,
     *,
 };
+use noise::{core::perlin, NoiseFn, Perlin};
 use physics::{energy::EnergyCalculator, verlet::VerletIntegrator, Particle, SimulationBuffers};
 use rand::{thread_rng, Rng};
 use rand_distr::{Uniform, UnitBall, UnitCircle};
@@ -64,7 +65,8 @@ impl Engine for TardigradeEngine {
 
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         let mut particles = Vec::new();
-        let num_particles = 1_000_000;
+        let num_particles = 100_000;
+        let total_mass = 1.0;
         let mut rng = thread_rng();
 
         // let gas = BallOfGas::new(
@@ -75,20 +77,39 @@ impl Engine for TardigradeEngine {
         // );
         // particles.append(&mut gas.get_particles(num_particles, &mut rng));
 
-        let galaxy1 = Galaxy::new(
-            1000.0,
-            15.0,
-            // Plummer::new(4.0, 0.0),
-            Uniform::new(0.5, 10.0),
-            Point3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 0.0, 0.0),
-            Vector3::new(1.0, -1.0, 0.0),
-        );
+        // let galaxy1 = Galaxy::new(
+        //     1000.0,
+        //     1.0,
+        //     Plummer::new(1.0, 0.1),
+        //     // Uniform::new(0.1, 3.0),
+        //     Point3::new(0.0, 4.0, 4.0),
+        //     Vector3::new(0.0, 0.0, 0.0),
+        //     Vector3::new(1.0, 0.0, 0.0),
+        // );
+        // particles.append(&mut galaxy1.get_particles(num_particles / 2, &mut rng));
 
-        particles.append(&mut galaxy1.get_particles(num_particles / 2, &mut rng));
+        let dim: f32 = 1.0;
+        let scale: f32 = 0.1;
+        let perlin = Perlin::new(1);
+        while particles.len() < num_particles {
+            let x: f32 = rng.gen_range(0.0..scale);
+            let y: f32 = rng.gen_range(0.0..scale);
+            let z: f32 = rng.gen_range(0.0..scale);
 
-        let dt: f32 = 0.01;
-        let softening: f32 = 0.01;
+            let noise_value = perlin.get([x as f64, y as f64, z as f64]);
+            let probability = (noise_value + 1.0) / 2.0; // Normalize to [0, 1]
+
+            if rng.gen::<f64>() < probability.pow(4.0) {
+                particles.push(Particle::new(
+                    Point3::new(x, y, z) * (dim / scale),
+                    Vector3::zero(),
+                    total_mass / num_particles as f32,
+                ));
+            }
+        }
+
+        let dt: f32 = 0.001;
+        let softening: f32 = 0.1;
 
         let simulation = SimulationBuffers::new(context.api().construction(), particles);
 
@@ -116,9 +137,7 @@ impl Engine for TardigradeEngine {
         if self.state.active {
             self.integrator.execute(api.construction());
             self.energy.execute(api.construction());
-            self.state
-                .energy
-                .push(self.energy.shader().get_total_energy());
+            self.state.energy.push(self.energy.get_total_energy());
         }
 
         self.render.draw(
@@ -138,9 +157,9 @@ impl Engine for TardigradeEngine {
             .min_width(width)
             .resizable(false)
             .show(context, |ui| {
+                ui.separator();
                 ui.heading("Newtonian Gravity Simulator");
                 ui.label(format!("Using: {}", api.device_name()));
-
                 ui.separator();
 
                 Grid::new("render_settings")
@@ -154,7 +173,7 @@ impl Engine for TardigradeEngine {
                         ui.add(
                             DragValue::new(&mut self.state.brightness)
                                 .speed(0.02)
-                                .clamp_range(0.01..=5.0),
+                                .clamp_range(0.01..=50.0),
                         );
                         ui.end_row();
                         ui.label("Scale:");
@@ -212,10 +231,12 @@ impl Engine for TardigradeEngine {
                         plot_ui.line(total);
                         if self.state.energy.len() > 0 {
                             plot_ui.hline(
-                                HLine::new(self.state.energy[0] * 1.01).color(Color32::WHITE),
+                                HLine::new(self.state.energy.last().unwrap() * 1.01)
+                                    .color(Color32::WHITE),
                             );
                             plot_ui.hline(
-                                HLine::new(self.state.energy[0] * 0.99).color(Color32::WHITE),
+                                HLine::new(self.state.energy.last().unwrap() * 0.99)
+                                    .color(Color32::WHITE),
                             );
                         }
                     });
@@ -267,13 +288,8 @@ impl TardigradeEngine {
 
 fn main() {
     let options = EngineOptions {
-        window_options: WindowOptions {
-            title: "Hatchery Engine",
-            dimensions: LogicalSize::new(1400, 1000),
-        },
-        features: Features {
-            ..Features::empty()
-        },
+        window_options: WindowOptions::default(),
+        features: Features::empty(),
         ..EngineOptions::default()
     };
 

@@ -11,17 +11,7 @@ use vulkano::{
 
 use super::SimulationBuffers;
 
-mod cs {
-    vulkano_shaders::shader! {
-        ty: "compute",
-        path: "src/physics/energy.glsl",
-        types_meta: {
-            use bytemuck::{Pod, Zeroable};
-
-            #[derive(Clone, Copy, Zeroable, Pod)]
-        },
-    }
-}
+hatchery::compute! { "src/physics/energy.glsl", energy }
 
 pub struct EnergyCalculator {
     data: Arc<SimulationBuffers>,
@@ -50,7 +40,7 @@ impl EnergyCalculator {
 }
 
 impl ComputeShader for EnergyCalculator {
-    type Constants = cs::ty::SimulationData;
+    type Constants = energy::ty::SimulationData;
 
     fn push_constants(&self) -> Option<Self::Constants> {
         Some(Self::Constants {
@@ -63,7 +53,7 @@ impl ComputeShader for EnergyCalculator {
     }
 
     fn load_module(device: Arc<Device>) -> Arc<ShaderModule> {
-        cs::load(device).unwrap()
+        energy::load(device).unwrap()
     }
 
     fn dispatch_size(&self) -> [u32; 3] {

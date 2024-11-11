@@ -12,7 +12,7 @@ use vulkano::{
     pipeline::graphics::viewport::Viewport,
     render_pass::Subpass,
     swapchain::Surface,
-    VulkanLibrary, Version,
+    Version, VulkanLibrary,
 };
 use vulkano_util::{
     context::{VulkanoConfig, VulkanoContext},
@@ -41,8 +41,8 @@ pub struct WindowOptions {
 impl Default for WindowOptions {
     fn default() -> Self {
         Self {
-            title: "Voidray Engine",
-            dimensions: LogicalSize::new(1920, 1080),
+            title: "Hatchery Engine",
+            dimensions: LogicalSize::new(1400, 1000),
         }
     }
 }

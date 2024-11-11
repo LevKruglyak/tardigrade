@@ -1,6 +1,6 @@
 use std::f32::consts::TAU;
 
-use cgmath::{InnerSpace, Point3, Quaternion, Rotation, Vector3};
+use cgmath::{num_traits::Float, InnerSpace, Point3, Quaternion, Rotation, Vector3};
 use rand::{rngs::ThreadRng, Rng};
 use rand_distr::{Distribution, Uniform, UnitBall};
 

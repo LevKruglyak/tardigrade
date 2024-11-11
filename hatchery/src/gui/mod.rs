@@ -10,7 +10,7 @@ use winit::{event::WindowEvent, event_loop::EventLoopWindowTarget};
 pub mod egui;
 
 #[cfg(feature = "egui")]
-pub mod egui_fat_button;
+pub mod egui_widgets;
 
 // An abstraction layer over the gui library to allow for easier switching between two libraries
 

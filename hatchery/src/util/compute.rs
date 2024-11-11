@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
 
 use systemstat::Duration;
 use vulkano::{
@@ -84,12 +87,18 @@ impl<G: ComputeShader> ComputeShaderExecutor<G> {
             .wait(Some(Duration::from_secs(10)))
             .expect("exceeded timeout!");
     }
+}
 
-    pub fn shader(&self) -> &G {
+impl<G: ComputeShader> Deref for ComputeShaderExecutor<G> {
+    type Target = G;
+
+    fn deref(&self) -> &Self::Target {
         &self.shader
     }
+}
 
-    pub fn shader_mut(&mut self) -> &mut G {
+impl<G: ComputeShader> DerefMut for ComputeShaderExecutor<G> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.shader
     }
 }
@@ -97,7 +106,9 @@ impl<G: ComputeShader> ComputeShaderExecutor<G> {
 pub trait ComputeShader {
     fn load_module(device: Arc<Device>) -> Arc<ShaderModule>;
 
-    fn entry_point() -> &'static str;
+    fn entry_point() -> &'static str {
+        "main"
+    }
 
     fn dispatch_size(&self) -> [u32; 3];
 

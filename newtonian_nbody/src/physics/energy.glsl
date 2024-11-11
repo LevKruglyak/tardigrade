@@ -4,21 +4,10 @@
 
 layout(local_size_x = PARALLELISM, local_size_y = 1, local_size_z = 1) in;
 
-layout(set = 0, binding = 0) buffer PositionMass {
-    vec4 data[];
-} pos_mass;
-
-layout(set = 0, binding = 1) buffer Velocity {
-    vec4 data[];
-} vel;
-
-layout(set = 0, binding = 2) buffer Acceleration {
-    vec4 data[];
-} acc;
-
-layout(set = 0, binding = 3) buffer EnergyOutput {
-    float data[];
-} energy;
+layout(set = 0, binding = 0) buffer PositionMass { vec4 data[]; } pos_mass;
+layout(set = 0, binding = 1) buffer Velocity { vec4 data[]; } vel;
+layout(set = 0, binding = 2) buffer Acceleration { vec4 data[]; } acc;
+layout(set = 0, binding = 3) buffer EnergyOutput { float data[]; } energy;
 
 layout(push_constant) uniform SimulationData {
     uint buffer_size;

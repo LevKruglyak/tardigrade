@@ -73,9 +73,9 @@ impl Engine for TardigradeEngine {
             .min_width(width)
             .resizable(false)
             .show(context, |ui| {
+                ui.separator();
                 ui.heading("2D SPH Simulator");
                 ui.label(format!("Using: {}", api.device_name()));
-
                 ui.separator();
 
                 // Grid::new("render_settings")

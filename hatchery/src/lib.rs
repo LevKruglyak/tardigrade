@@ -37,4 +37,4 @@ pub mod egui_implementation {
 }
 
 #[cfg(feature = "egui")]
-pub use crate::gui::egui_fat_button;
+pub use crate::gui::egui_widgets;

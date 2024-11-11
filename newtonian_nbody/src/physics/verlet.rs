@@ -1,31 +1,20 @@
 use std::sync::Arc;
 
-use cs::ty::SimulationData;
+use super::{
+    Particle, ParticleAcceleration, ParticlePositionMass, ParticleVelocity, SimulationBuffers,
+};
 use hatchery::util::{
     buffer::{AbstractBuffer, SharedBuffer},
     compute::ComputeShader,
     point_cloud::RenderPoint,
     ConstructionContext,
 };
+use verlet::ty::SimulationData;
 use vulkano::{
     buffer::BufferUsage, descriptor_set::WriteDescriptorSet, device::Device, shader::ShaderModule,
 };
 
-use super::{
-    Particle, ParticleAcceleration, ParticlePositionMass, ParticleVelocity, SimulationBuffers,
-};
-
-mod cs {
-    vulkano_shaders::shader! {
-        ty: "compute",
-        path: "src/physics/verlet.glsl",
-        types_meta: {
-            use bytemuck::{Pod, Zeroable};
-
-            #[derive(Clone, Copy, Zeroable, Pod)]
-        },
-    }
-}
+hatchery::compute! { "src/physics/verlet.glsl", verlet }
 
 pub struct VerletIntegrator {
     data: Arc<SimulationBuffers>,
@@ -46,7 +35,7 @@ impl VerletIntegrator {
 }
 
 impl ComputeShader for VerletIntegrator {
-    type Constants = cs::ty::SimulationData;
+    type Constants = verlet::ty::SimulationData;
 
     fn push_constants(&self) -> Option<Self::Constants> {
         Some(Self::Constants {
@@ -57,12 +46,8 @@ impl ComputeShader for VerletIntegrator {
         })
     }
 
-    fn entry_point() -> &'static str {
-        "main"
-    }
-
     fn load_module(device: Arc<Device>) -> Arc<ShaderModule> {
-        cs::load(device).unwrap()
+        verlet::load(device).unwrap()
     }
 
     fn dispatch_size(&self) -> [u32; 3] {
