@@ -5,7 +5,7 @@ layout(location = 1) in float f_brightness;
 
 layout(location = 0) out vec4 f_color;
 
-// #define SIMPLE_PARTICLES
+#define SIMPLE_PARTICLES
 
 float cubic_spline(float q, float h) {
     if (q < 0.0) {

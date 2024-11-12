@@ -5,6 +5,9 @@ use vulkano::{
     pipeline::graphics::vertex_input::{BuffersDefinition, Vertex},
 };
 
+pub mod cube;
+pub mod quad;
+
 use super::{
     buffer::{AbstractBuffer, SharedBuffer},
     ConstructionContext,
@@ -32,9 +35,14 @@ pub struct Mesh<V: Vertex> {
     pub index: SharedBuffer<u32>,
 }
 
+pub trait GenericMesh<V: Vertex> {
+    fn vertices() -> Vec<V>;
+    fn indices() -> Vec<u32>;
+}
+
 impl<V: Vertex> Mesh<V> {
     pub fn new(context: &ConstructionContext, vertex: Vec<V>, index: Vec<u32>) -> Self {
-        let vertex = SharedBuffer::from_vec(
+        let vertex = SharedBuffer::from_iter(
             context,
             BufferUsage {
                 vertex_buffer: true,
@@ -43,7 +51,7 @@ impl<V: Vertex> Mesh<V> {
             vertex,
         );
 
-        let index = SharedBuffer::from_vec(
+        let index = SharedBuffer::from_iter(
             context,
             BufferUsage {
                 index_buffer: true,

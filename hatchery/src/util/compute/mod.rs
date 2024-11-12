@@ -16,6 +16,8 @@ use vulkano::{
 
 use super::ConstructionContext;
 
+// TODO: multiple invocations
+
 pub struct ComputeShaderExecutor<G: ComputeShader> {
     module: Arc<ShaderModule>,
     pipeline: Arc<ComputePipeline>,
@@ -77,15 +79,13 @@ impl<G: ComputeShader> ComputeShaderExecutor<G> {
         builder.dispatch(self.shader.dispatch_size()).unwrap();
 
         let command_buffer = builder.build().unwrap();
-        let future = sync::now(context.device())
+        sync::now(context.device())
             .then_execute(context.queue(), command_buffer)
             .unwrap()
             .then_signal_fence_and_flush()
+            .unwrap()
+            .wait(None)
             .unwrap();
-
-        future
-            .wait(Some(Duration::from_secs(10)))
-            .expect("exceeded timeout!");
     }
 }
 

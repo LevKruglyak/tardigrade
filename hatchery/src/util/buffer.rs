@@ -25,7 +25,10 @@ pub trait AbstractBuffer<T: BufferData> {
     fn new(context: &ConstructionContext, usage: BufferUsage, len: u64) -> Self;
 
     /// Create a buffer from a vector of data
-    fn from_vec(context: &ConstructionContext, usage: BufferUsage, data: Vec<T>) -> Self;
+    fn from_iter<I>(context: &ConstructionContext, usage: BufferUsage, data: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator;
 
     fn buffer(&self) -> Arc<dyn BufferAccess>;
 
@@ -77,9 +80,13 @@ impl<T: BufferData> AbstractBuffer<T> for DeviceBuffer<T> {
         }
     }
 
-    fn from_vec(context: &ConstructionContext, usage: BufferUsage, data: Vec<T>) -> Self {
+    fn from_iter<I>(context: &ConstructionContext, usage: BufferUsage, data: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+    {
         // Create temporary shared buffer
-        let temp = SharedBuffer::from_vec(
+        let temp = SharedBuffer::from_iter(
             context,
             BufferUsage {
                 transfer_src: true,
@@ -137,7 +144,11 @@ impl<T: BufferData> AbstractBuffer<T> for SharedBuffer<T> {
         }
     }
 
-    fn from_vec(context: &ConstructionContext, usage: BufferUsage, data: Vec<T>) -> Self {
+    fn from_iter<I>(context: &ConstructionContext, usage: BufferUsage, data: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+    {
         Self {
             buffer: CpuAccessibleBuffer::from_iter(context.memory_allocator(), usage, false, data)
                 .unwrap(),

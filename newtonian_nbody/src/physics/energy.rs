@@ -23,7 +23,7 @@ impl EnergyCalculator {
         let num_particles = data.num_particles;
         Self {
             data,
-            energy: SharedBuffer::from_vec(
+            energy: SharedBuffer::from_iter(
                 context,
                 BufferUsage {
                     storage_buffer: true,

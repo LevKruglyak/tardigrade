@@ -85,7 +85,7 @@ impl PointCloudPipeline {
 
     pub fn draw(
         &mut self,
-        points: &SharedBuffer<RenderPoint>,
+        points: &impl AbstractBuffer<RenderPoint>,
         view: ViewData,
         brightness: f32,
         size: f32,

@@ -24,7 +24,7 @@ pub struct TexturedQuad {
 
 impl TexturedQuad {
     pub fn new(context: &ConstructionContext, min: [f32; 2], max: [f32; 2]) -> Self {
-        let vertex = SharedBuffer::from_vec(
+        let vertex = SharedBuffer::from_iter(
             context,
             BufferUsage {
                 vertex_buffer: true,
@@ -50,7 +50,7 @@ impl TexturedQuad {
             ],
         );
 
-        let index = SharedBuffer::from_vec(
+        let index = SharedBuffer::from_iter(
             context,
             BufferUsage {
                 index_buffer: true,

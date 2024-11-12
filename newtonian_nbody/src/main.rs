@@ -1,6 +1,10 @@
 #![allow(unused_variables, unused_imports, dead_code)]
 
-use std::{f32::consts::TAU, sync::Arc};
+use std::{
+    f32::consts::TAU,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use cgmath::{num_traits::Pow, InnerSpace, Point3, Vector3, Zero};
 use distributions::{BallOfGas, Galaxy, Plummer};
@@ -35,6 +39,7 @@ pub struct GuiState {
     scale: f32,
 
     show_energy: bool,
+    last_simulation_time: Duration,
     energy: Vec<f32>,
 }
 
@@ -45,6 +50,7 @@ impl Default for GuiState {
             brightness: 1.0,
             scale: 0.2,
 
+            last_simulation_time: Duration::default(),
             show_energy: false,
             energy: Vec::new(),
         }
@@ -65,7 +71,7 @@ impl Engine for TardigradeEngine {
 
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         let mut particles = Vec::new();
-        let num_particles = 100_000;
+        let num_particles = 300_000;
         let total_mass = 1.0;
         let mut rng = thread_rng();
 
@@ -135,9 +141,11 @@ impl Engine for TardigradeEngine {
 
     fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
         if self.state.active {
+            let start = Instant::now();
             self.integrator.execute(api.construction());
             self.energy.execute(api.construction());
             self.state.energy.push(self.energy.get_total_energy());
+            self.state.last_simulation_time = start.elapsed();
         }
 
         self.render.draw(
@@ -147,7 +155,7 @@ impl Engine for TardigradeEngine {
             self.state.brightness,
             self.state.scale,
             info,
-        )
+        );
     }
 
     fn immediate(&mut self, context: &mut egui::Context, api: &mut EngineApi) {
@@ -180,8 +188,25 @@ impl Engine for TardigradeEngine {
                         ui.add(
                             DragValue::new(&mut self.state.scale)
                                 .speed(0.02)
-                                .clamp_range(0.0..=20.0),
+                                .clamp_range(0.0..=2.0),
                         );
+                        ui.end_row();
+
+                        ui.label("FPS");
+                        ui.label(format!(
+                            "{:.0}",
+                            1.0 / api
+                                .performance
+                                .get_time("frame")
+                                .unwrap_or_default()
+                                .as_secs_f64()
+                        ));
+                        ui.end_row();
+                        ui.label("UPS");
+                        ui.label(format!(
+                            "{:.0}",
+                            1.0 / self.state.last_simulation_time.as_secs_f64()
+                        ));
                         ui.end_row();
 
                         ui.label("Show energy:");

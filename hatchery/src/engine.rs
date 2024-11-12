@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use vulkano::{
     command_buffer::{
@@ -133,7 +133,7 @@ where
     where
         E: Engine + 'static,
     {
-        context.api.performance.begin_frame();
+        let start = Instant::now();
         let before_future = context.window_renderer_mut().acquire().unwrap();
 
         let target = context.window_renderer_mut().swapchain_image_view();
@@ -150,7 +150,11 @@ where
         context
             .window_renderer_mut()
             .present(after_render_pass_future, true);
-        context.api.performance.end_frame();
+
+        context
+            .api
+            .performance
+            .record_time("frame", start.elapsed());
     }
 }
 
