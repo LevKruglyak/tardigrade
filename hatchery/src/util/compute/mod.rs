@@ -3,7 +3,6 @@ use std::{
     sync::Arc,
 };
 
-use systemstat::Duration;
 use vulkano::{
     buffer::BufferContents,
     command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage},

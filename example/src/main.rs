@@ -7,7 +7,6 @@ use egui::{
     plot::{HLine, Line, Plot, PlotPoints},
     Color32, DragValue, Grid, Window,
 };
-use egui_fat_button::FatButton;
 use egui_implementation::*;
 use hatchery::{
     dpi::PhysicalPosition,
@@ -30,11 +29,6 @@ impl Default for GuiState {
 }
 
 pub struct TardigradeEngine {
-    // simulation: Arc<SimulationBuffers>,
-    // integrator: ComputeShaderExecutor<VerletIntegrator>,
-    // energy: ComputeShaderExecutor<EnergyCalculator>,
-    // render: PointCloudPipeline,
-    // camera: Camera,
     state: GuiState,
 }
 
@@ -47,24 +41,7 @@ impl Engine for TardigradeEngine {
         }
     }
 
-    fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {
-        // if self.state.active {
-        //     self.integrator.execute(api.construction());
-        //     self.energy.execute(api.construction());
-        //     self.state
-        //         .energy
-        //         .push(self.energy.shader().get_total_energy());
-        // }
-        //
-        // self.render.draw(
-        //     &self.simulation.points,
-        //     self.camera
-        //         .generate_view(info.viewport.dimensions[0] / info.viewport.dimensions[1]),
-        //     self.state.brightness,
-        //     self.state.scale,
-        //     info,
-        // )
-    }
+    fn render(&mut self, info: &mut RenderInfo, api: &EngineApi) {}
 
     fn immediate(&mut self, context: &mut egui::Context, api: &mut EngineApi) {
         let width = 250.0;
@@ -74,36 +51,9 @@ impl Engine for TardigradeEngine {
             .resizable(false)
             .show(context, |ui| {
                 ui.separator();
-                ui.heading("2D SPH Simulator");
+                ui.heading("Hatchery Example");
                 ui.label(format!("Using: {}", api.device_name()));
                 ui.separator();
-
-                // Grid::new("render_settings")
-                //     .num_columns(2)
-                //     .spacing([10.0, 4.0])
-                //     .max_col_width(width / 2.0)
-                //     .min_col_width(width / 2.0)
-                //     .striped(true)
-                //     .show(ui, |ui| {
-                // ui.label("Brightness");
-                // ui.add(
-                //     DragValue::new(&mut self.state.brightness)
-                //         .speed(0.02)
-                //         .clamp_range(0.01..=5.0),
-                // );
-                // ui.end_row();
-                // ui.label("Scale:");
-                // ui.add(
-                //     DragValue::new(&mut self.state.scale)
-                //         .speed(0.02)
-                //         .clamp_range(0.0..=20.0),
-                // );
-                // ui.end_row();
-                //
-                // ui.label("Show energy:");
-                // ui.checkbox(&mut self.state.show_energy, "");
-                // ui.end_row()
-                //     });
             });
     }
 
@@ -150,16 +100,6 @@ impl TardigradeEngine {
 }
 
 fn main() {
-    let options = EngineOptions {
-        window_options: WindowOptions {
-            title: "Hatchery Engine",
-            dimensions: LogicalSize::new(1400, 1000),
-        },
-        features: Features {
-            ..Features::empty()
-        },
-        ..EngineOptions::default()
-    };
-
+    let options = EngineOptions::default();
     EngineLauncher::<TardigradeEngine>::run(options);
 }

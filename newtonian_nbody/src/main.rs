@@ -71,7 +71,7 @@ impl Engine for TardigradeEngine {
 
     fn init(context: &mut EngineContext<Self::Gui>) -> Self {
         let mut particles = Vec::new();
-        let num_particles = 300_000;
+        let num_particles = 100_000;
         let total_mass = 1.0;
         let mut rng = thread_rng();
 
@@ -83,36 +83,36 @@ impl Engine for TardigradeEngine {
         // );
         // particles.append(&mut gas.get_particles(num_particles, &mut rng));
 
-        // let galaxy1 = Galaxy::new(
-        //     1000.0,
-        //     1.0,
-        //     Plummer::new(1.0, 0.1),
-        //     // Uniform::new(0.1, 3.0),
-        //     Point3::new(0.0, 4.0, 4.0),
-        //     Vector3::new(0.0, 0.0, 0.0),
-        //     Vector3::new(1.0, 0.0, 0.0),
-        // );
-        // particles.append(&mut galaxy1.get_particles(num_particles / 2, &mut rng));
-
-        let dim: f32 = 1.0;
-        let scale: f32 = 0.1;
-        let perlin = Perlin::new(1);
-        while particles.len() < num_particles {
-            let x: f32 = rng.gen_range(0.0..scale);
-            let y: f32 = rng.gen_range(0.0..scale);
-            let z: f32 = rng.gen_range(0.0..scale);
-
-            let noise_value = perlin.get([x as f64, y as f64, z as f64]);
-            let probability = (noise_value + 1.0) / 2.0; // Normalize to [0, 1]
-
-            if rng.gen::<f64>() < probability.pow(4.0) {
-                particles.push(Particle::new(
-                    Point3::new(x, y, z) * (dim / scale),
-                    Vector3::zero(),
-                    total_mass / num_particles as f32,
-                ));
-            }
-        }
+        let galaxy1 = Galaxy::new(
+            1000.0,
+            1.0,
+            Plummer::new(1.0, 0.1),
+            // Uniform::new(0.1, 3.0),
+            Point3::new(0.0, 4.0, 4.0),
+            Vector3::new(0.0, 0.0, 0.0),
+            Vector3::new(1.0, 0.0, 0.0),
+        );
+        particles.append(&mut galaxy1.get_particles(num_particles / 2, &mut rng));
+        //
+        // let dim: f32 = 1.0;
+        // let scale: f32 = 0.1;
+        // let perlin = Perlin::new(1);
+        // while particles.len() < num_particles {
+        //     let x: f32 = rng.gen_range(0.0..scale);
+        //     let y: f32 = rng.gen_range(0.0..scale);
+        //     let z: f32 = rng.gen_range(0.0..scale);
+        //
+        //     let noise_value = perlin.get([x as f64, y as f64, z as f64]);
+        //     let probability = (noise_value + 1.0) / 2.0; // Normalize to [0, 1]
+        //
+        //     if rng.gen::<f64>() < probability.pow(4.0) {
+        //         particles.push(Particle::new(
+        //             Point3::new(x, y, z) * (dim / scale),
+        //             Vector3::zero(),
+        //             total_mass / num_particles as f32,
+        //         ));
+        //     }
+        // }
 
         let dt: f32 = 0.001;
         let softening: f32 = 0.1;

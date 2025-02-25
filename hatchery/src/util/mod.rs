@@ -10,7 +10,7 @@ use vulkano::{
 pub mod buffer;
 pub mod camera;
 pub mod compute;
-pub mod mesh;
+// pub mod mesh;
 pub mod point_cloud;
 pub mod quad;
 
